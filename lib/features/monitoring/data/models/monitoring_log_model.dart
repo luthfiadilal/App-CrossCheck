@@ -49,6 +49,7 @@ class MonitoringLogModel {
   final String id;
   final String date;
   final String workerName;
+  final String mandorName;
   final String status;
   final List<MonitoringDetailModel> details;
 
@@ -56,6 +57,7 @@ class MonitoringLogModel {
     required this.id,
     required this.date,
     required this.workerName,
+    required this.mandorName,
     required this.status,
     required this.details,
   });
@@ -72,6 +74,7 @@ class MonitoringLogModel {
       id: json['log_id'] ?? '',
       date: json['created_at'] ?? '',
       workerName: json['worker_name'] ?? '',
+      mandorName: json['mandor']?['name'] ?? 'Mandor Tidak Diketahui',
       status: json['status_approval'] ?? 'PENDING',
       details: details,
     );

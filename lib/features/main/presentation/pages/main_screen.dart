@@ -1,6 +1,7 @@
 import 'package:crosscheck/features/monitoring/presentation/pages/approval_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/mandor_history_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/mandor_home_page.dart';
+import 'package:crosscheck/features/monitoring/presentation/pages/qr_generator_page.dart';
 import 'package:crosscheck/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -39,11 +40,13 @@ class _MainScreenState extends State<MainScreen> {
       // ASISTEN / KEPALA
       _pages = [
         const ApprovalPage(), // Tab Utama adalah List Approval
+        const QrGeneratorPage(), // Fitur QR Generator
         const MandorHistoryPage(), // Tetap bisa lihat history
         const ProfilePage(),
       ];
       _navItems = const [
         BottomNavigationBarItem(icon: Icon(Icons.assignment_turned_in_outlined), activeIcon: Icon(Icons.assignment_turned_in), label: 'Approval'),
+        BottomNavigationBarItem(icon: Icon(Icons.qr_code_2_outlined), activeIcon: Icon(Icons.qr_code_2), label: 'QR Generator'),
         BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
         BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
       ];
@@ -66,6 +69,7 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: AppColors.white,
         selectedItemColor: AppColors.primaryGreen,
         unselectedItemColor: AppColors.grey,
+        type: BottomNavigationBarType.fixed, // Added for 4 items
         items: _navItems,
       ),
     );

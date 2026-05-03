@@ -6,12 +6,14 @@ abstract class MonitoringState extends Equatable {
   const MonitoringState();
   
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class MonitoringInitial extends MonitoringState {}
 
 class MonitoringLoading extends MonitoringState {}
+
+class SyncingLogs extends MonitoringState {}
 
 class MonitoringLoaded extends MonitoringState {
   final List<MonitoringLogModel> logs;
@@ -44,6 +46,24 @@ class LogCreatedSuccess extends MonitoringState {
   final String message;
 
   const LogCreatedSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class PendingLogsCountLoaded extends MonitoringState {
+  final int count;
+
+  const PendingLogsCountLoaded(this.count);
+
+  @override
+  List<Object> get props => [count];
+}
+
+class SyncSuccess extends MonitoringState {
+  final String message;
+
+  const SyncSuccess(this.message);
 
   @override
   List<Object> get props => [message];

@@ -160,6 +160,8 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
                                                 children: [
                                                   _buildInfoTag(Icons.person, log.workerName, Colors.blue),
                                                   const SizedBox(width: 8),
+                                                  _buildInfoTag(Icons.assignment_ind, log.mandorName, Colors.purple),
+                                                  const SizedBox(width: 8),
                                                   _buildInfoTag(Icons.monitor_weight, '${log.quantity}', Colors.orange),
                                                 ],
                                               ),

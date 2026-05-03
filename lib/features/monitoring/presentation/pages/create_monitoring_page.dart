@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:crosscheck/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:crosscheck/features/auth/presentation/widgets/primary_button.dart';
+import 'package:crosscheck/features/monitoring/presentation/pages/qr_scanner_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/task_type_model.dart';
-import '../../data/repositories/monitoring_repository.dart';
 import '../bloc/monitoring_bloc.dart';
 import '../bloc/monitoring_event.dart';
 import '../bloc/monitoring_state.dart';
@@ -24,7 +24,6 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
   // Map untuk menyimpan detail yang sudah diisi, key: task_type_id
   final Map<String, Map<String, dynamic>> _filledDetails = {};
   List<TaskTypeModel> _availableTasks = [];
-  bool _isUploading = false;
 
   @override
   void initState() {
@@ -51,7 +50,6 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     );
     String selectedCondition = _filledDetails[task.id]?['conditions'] ?? 'BAIK';
     String? localImagePath = _filledDetails[task.id]?['local_image_path'];
-    String serverImageUrl = _filledDetails[task.id]?['photo_path'] ?? '';
 
     showModalBottomSheet(
       context: context,
@@ -87,6 +85,20 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                       label: 'Lokasi / Blok',
                       hintText: 'Contoh: Blok A-12',
                       controller: lController,
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.qr_code_scanner, color: AppColors.primaryGreen),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const QrScannerPage()),
+                          );
+                          if (result != null && result is String) {
+                            setModalState(() {
+                              lController.text = result;
+                            });
+                          }
+                        },
+                      ),
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
@@ -140,19 +152,13 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                         ),
                         child: localImagePath != null
                             ? Image.file(File(localImagePath!), fit: BoxFit.cover)
-                            : (serverImageUrl.isNotEmpty
-                                ? Image.network(
-                                    'https://9c15-2001-448a-2082-2474-515e-57ff-eac5-3c05.ngrok-free.app$serverImageUrl',
-                                    fit: BoxFit.cover,
-                                  )
-                                : const Icon(Icons.camera_alt, size: 40, color: AppColors.grey)),
+                            : const Icon(Icons.camera_alt, size: 40, color: AppColors.grey),
                       ),
                     ),
                     const SizedBox(height: 24),
                     PrimaryButton(
                       text: 'SIMPAN DETAIL',
-                      isLoading: _isUploading,
-                      onPressed: () async {
+                      onPressed: () {
                         if (qController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Kuantitas wajib diisi')),
@@ -160,37 +166,20 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                           return;
                         }
 
-                        setModalState(() => _isUploading = true);
+                        setState(() {
+                          _filledDetails[task.id] = {
+                            'task_type_id': task.id,
+                            'task_name': task.name,
+                            'quantity': qController.text,
+                            'conditions': selectedCondition,
+                            'descriptions': dController.text,
+                            'locations': lController.text,
+                            'photo_path': null, // Will be filled during sync
+                            'local_image_path': localImagePath,
+                          };
+                        });
 
-                        try {
-                          String finalPhotoPath = serverImageUrl;
-                          if (localImagePath != null) {
-                            // Upload image to server
-                            final repo = MonitoringRepository();
-                            finalPhotoPath = await repo.uploadImage(localImagePath!);
-                          }
-
-                          setState(() {
-                            _filledDetails[task.id] = {
-                              'task_type_id': task.id,
-                              'task_name': task.name,
-                              'quantity': qController.text,
-                              'conditions': selectedCondition,
-                              'descriptions': dController.text,
-                              'locations': lController.text,
-                              'photo_path': finalPhotoPath,
-                              'local_image_path': localImagePath,
-                            };
-                          });
-
-                          Navigator.pop(context);
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Upload Gagal: $e')),
-                          );
-                        } finally {
-                          setModalState(() => _isUploading = false);
-                        }
+                        Navigator.pop(context);
                       },
                     ),
                     const SizedBox(height: 20),
@@ -219,12 +208,10 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     }
 
     context.read<MonitoringBloc>().add(
-          SubmitMonitoring(
+          SaveMonitoringLocally(
             workerName: _workerNameController.text,
             details: _filledDetails.values.map((e) {
-              // Bersihkan map dari local_image_path sebelum dikirim ke API
               final Map<String, dynamic> detail = Map.from(e);
-              detail.remove('local_image_path');
               detail.remove('task_name');
               return detail;
             }).toList(),
@@ -324,7 +311,7 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                   ),
                 const SizedBox(height: 40),
                 PrimaryButton(
-                  text: 'SUBMIT SEMUA LAPORAN',
+                  text: 'SIMPAN LAPORAN',
                   isLoading: state is MonitoringLoading && _availableTasks.isNotEmpty,
                   onPressed: _onSubmitTotal,
                 ),

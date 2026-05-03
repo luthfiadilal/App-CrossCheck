@@ -1,11 +1,10 @@
 import 'package:equatable/equatable.dart';
-import '../../data/models/monitoring_log_model.dart';
 
 abstract class MonitoringEvent extends Equatable {
   const MonitoringEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class FetchLogs extends MonitoringEvent {}
@@ -24,3 +23,20 @@ class SubmitMonitoring extends MonitoringEvent {
   @override
   List<Object> get props => [workerName, details];
 }
+
+class SaveMonitoringLocally extends MonitoringEvent {
+  final String workerName;
+  final List<Map<String, dynamic>> details;
+
+  const SaveMonitoringLocally({
+    required this.workerName,
+    required this.details,
+  });
+
+  @override
+  List<Object> get props => [workerName, details];
+}
+
+class SyncMonitoringLogs extends MonitoringEvent {}
+
+class FetchPendingLogsCount extends MonitoringEvent {}

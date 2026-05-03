@@ -8,6 +8,7 @@ class CustomTextField extends StatelessWidget {
   final bool isPassword;
   final TextInputType keyboardType;
   final IconData? prefixIcon;
+  final Widget? suffixIcon;
 
   const CustomTextField({
     Key? key,
@@ -17,6 +18,7 @@ class CustomTextField extends StatelessWidget {
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
+    this.suffixIcon,
   }) : super(key: key);
 
   @override
@@ -42,6 +44,7 @@ class CustomTextField extends StatelessWidget {
             hintText: hintText,
             hintStyle: const TextStyle(color: AppColors.grey),
             prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primaryGreen) : null,
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: AppColors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

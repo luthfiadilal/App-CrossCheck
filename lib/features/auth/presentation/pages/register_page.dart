@@ -19,8 +19,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  String _selectedRole = 'MANDOR A';
-  final List<String> _roles = ['MANDOR A', 'MANDOR B', 'MANDOR C'];
+  String _selectedRole = 'MANDOR RAWAT SEMPROT';
+  final List<String> _roles = [
+    'MANDOR RAWAT SEMPROT',
+    'MANDOR RAWAT PUPUK',
+    'MANDOR RAWAT MANUAL',
+  ];
 
   @override
   void dispose() {
