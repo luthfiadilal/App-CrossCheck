@@ -20,10 +20,7 @@ class MonitoringRepository {
         throw Exception('Failed to fetch logs');
       }
     } on DioException catch (e) {
-       if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to fetch logs');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to fetch logs'));
     }
   }
 
@@ -42,10 +39,7 @@ class MonitoringRepository {
         throw Exception('Failed to upload image');
       }
     } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to upload image');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to upload image'));
     }
   }
 
@@ -65,10 +59,7 @@ class MonitoringRepository {
         throw Exception('Failed to submit monitoring');
       }
     } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to submit monitoring');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to submit monitoring'));
     }
   }
 
@@ -100,6 +91,7 @@ class MonitoringRepository {
           'conditions': detail['conditions'],
           'photo_path': detail['photo_path'],
           'descriptions': detail['descriptions'],
+          'nomor_baris': detail['nomor_baris'],
           'locations': detail['locations'],
           'status_task': 'PENDING',
           'created_at': now,
@@ -159,10 +151,7 @@ class MonitoringRepository {
         throw Exception('Failed to bulk submit monitoring');
       }
     } on DioException catch (e) {
-       if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to sync logs');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to sync logs'));
     }
   }
 
@@ -195,7 +184,11 @@ class MonitoringRepository {
       if (localData.isNotEmpty) {
         return localData.map((json) => TaskTypeModel.fromJson(json)).toList();
       }
-      throw Exception('Error fetching task types: $e');
+      
+      if (e is DioException) {
+        throw Exception(_handleDioError(e, 'Gagal mengambil daftar tugas. Hubungkan ke internet untuk pertama kali.'));
+      }
+      throw Exception('Gagal mengambil daftar tugas: $e');
     }
   }
 
@@ -212,10 +205,7 @@ class MonitoringRepository {
         throw Exception('Failed to fetch pending approvals');
       }
     } on DioException catch (e) {
-       if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to fetch pending approvals');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to fetch pending approvals'));
     }
   }
 
@@ -235,10 +225,7 @@ class MonitoringRepository {
         throw Exception('Failed to submit approval');
       }
     } on DioException catch (e) {
-       if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to submit approval');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to submit approval'));
     }
   }
 
@@ -252,14 +239,28 @@ class MonitoringRepository {
         'status': status,
       });
 
-      if (response.statusCode != 200) {
+      if (response.statusCode == 200) {
+        return;
+      } else {
         throw Exception('Failed to submit detail approval');
       }
     } on DioException catch (e) {
-       if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to submit detail approval');
-      }
-      throw Exception('Network error: ${e.message}');
+      throw Exception(_handleDioError(e, 'Failed to submit detail approval'));
     }
+  }
+
+  String _handleDioError(DioException e, String defaultMessage) {
+    if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+      return 'Koneksi internet bermasalah. Silakan coba lagi.';
+    }
+    
+    if (e.response != null && e.response?.data != null) {
+      final data = e.response?.data;
+      if (data is Map && data.containsKey('message')) {
+        return data['message'] ?? defaultMessage;
+      }
+    }
+    
+    return e.message ?? defaultMessage;
   }
 }

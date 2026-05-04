@@ -49,6 +49,12 @@ class _LoginPageState extends State<LoginPage> {
                 backgroundColor: AppColors.primaryGreen,
               ),
             );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainScreen(role: state.user.role),
+              ),
+            );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.error), backgroundColor: Colors.red),
@@ -62,11 +68,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                const Icon(
-                  Icons.check_circle_outline,
-                  size: 80,
-                  color: AppColors.primaryGreen,
-                ),
+                Image.asset('assets/images/logo2.png', height: 150),
                 const SizedBox(height: 24),
                 const Text(
                   'Selamat Datang\ndi CrossCheck',

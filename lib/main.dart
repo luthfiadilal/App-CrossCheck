@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'core/theme/app_colors.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
@@ -9,11 +10,15 @@ import 'features/monitoring/presentation/bloc/approval_bloc.dart';
 import 'package:crosscheck/features/main/presentation/pages/main_screen.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
+import 'features/main/presentation/pages/splash_page.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Tahan splash screen native agar tidak blank
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  
   await initializeDateFormatting('id_ID', null);
   runApp(const MyApp());
 }
@@ -28,12 +33,8 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc()..add(CheckSession()),
         ),
-        BlocProvider<MonitoringBloc>(
-          create: (context) => MonitoringBloc(),
-        ),
-        BlocProvider<ApprovalBloc>(
-          create: (context) => ApprovalBloc(),
-        ),
+        BlocProvider<MonitoringBloc>(create: (context) => MonitoringBloc()),
+        BlocProvider<ApprovalBloc>(create: (context) => ApprovalBloc()),
       ],
       child: MaterialApp(
         title: 'CrossCheck',
@@ -43,21 +44,8 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           fontFamily: 'Roboto',
         ),
-        home: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            if (state is AuthSuccess) {
-              return MainScreen(role: state.user.role);
-            }
-            if (state is AuthLoading) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-            return const LoginPage();
-          },
-        ),
+        home: const SplashPage(),
       ),
     );
   }
 }
-

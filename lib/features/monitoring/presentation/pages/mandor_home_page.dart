@@ -5,6 +5,8 @@ import '../bloc/monitoring_bloc.dart';
 import '../bloc/monitoring_event.dart';
 import '../bloc/monitoring_state.dart';
 import 'create_monitoring_page.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class MandorHomePage extends StatefulWidget {
   const MandorHomePage({super.key});
@@ -20,6 +22,8 @@ class _MandorHomePageState extends State<MandorHomePage> {
   void initState() {
     super.initState();
     context.read<MonitoringBloc>().add(FetchPendingLogsCount());
+    // Pre-fetch task types to cache them for offline use
+    context.read<MonitoringBloc>().add(FetchTaskTypes());
   }
 
   @override
@@ -47,13 +51,21 @@ class _MandorHomePageState extends State<MandorHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Halo, Mandor!',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryGreen,
-                ),
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  String name = 'Mandor';
+                  if (state is AuthSuccess) {
+                    name = state.user.name;
+                  }
+                  return Text(
+                    'Halo, $name!',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryGreen,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               const Text(

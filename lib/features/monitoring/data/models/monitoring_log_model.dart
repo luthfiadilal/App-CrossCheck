@@ -5,6 +5,7 @@ class MonitoringDetailModel {
   final String condition;
   final String photoPath;
   final String description;
+  final String nomorBaris;
   final String location;
   final String statusTask;
 
@@ -15,6 +16,7 @@ class MonitoringDetailModel {
     required this.condition,
     required this.photoPath,
     required this.description,
+    required this.nomorBaris,
     required this.location,
     required this.statusTask,
   });
@@ -39,6 +41,7 @@ class MonitoringDetailModel {
       condition: json['conditions'] ?? 'BAIK',
       photoPath: json['photo_path'] ?? '',
       description: json['descriptions'] ?? '',
+      nomorBaris: json['nomor_baris'] ?? '',
       location: json['locations'] ?? '',
       statusTask: json['status_task'] ?? 'PENDING',
     );
@@ -83,4 +86,5 @@ class MonitoringLogModel {
   // Helper properties for summary (compatibility with old code)
   String get taskName => details.isNotEmpty ? details[0].taskName : 'Tanpa Tugas';
   String get quantity => details.isNotEmpty ? details[0].quantity : '0';
+  String get nomorBaris => details.isNotEmpty ? details[0].nomorBaris : 'N/A';
 }

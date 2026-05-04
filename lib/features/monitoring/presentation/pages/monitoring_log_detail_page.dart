@@ -189,6 +189,8 @@ class MonitoringLogDetailPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildInfoRow(Icons.location_on_outlined, 'Lokasi', detail.location),
                 const SizedBox(height: 8),
+                _buildInfoRow(Icons.format_list_numbered_outlined, 'Nomor Baris', detail.nomorBaris),
+                const SizedBox(height: 8),
                 _buildInfoRow(Icons.monitor_weight_outlined, 'Kuantitas', detail.quantity),
                 if (detail.description.isNotEmpty) ...[
                   const SizedBox(height: 8),

@@ -111,6 +111,7 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
             'quantity': detail['quantity'],
             'conditions': detail['conditions'],
             'descriptions': detail['descriptions'],
+            'nomor_baris': detail['nomor_baris'],
             'locations': detail['locations'],
             'photo_path': photoPath,
           });

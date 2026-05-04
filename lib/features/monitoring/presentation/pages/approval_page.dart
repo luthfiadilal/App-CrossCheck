@@ -7,6 +7,8 @@ import '../bloc/approval_event.dart';
 import '../bloc/approval_state.dart';
 import 'approval_detail_page.dart';
 import '../../data/models/monitoring_log_model.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class ApprovalPage extends StatefulWidget {
   const ApprovalPage({super.key});
@@ -53,135 +55,181 @@ class _ApprovalPageState extends State<ApprovalPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryGreen,
-        elevation: 0,
-        foregroundColor: AppColors.white,
-        title: const Text(
-          'Persetujuan Laporan',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          Expanded(
-            child: BlocBuilder<ApprovalBloc, ApprovalState>(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
-                if (state is ApprovalLoading) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
-                } else if (state is ApprovalLoaded) {
-                  List<MonitoringLogModel> filteredLogs = state.pendingLogs;
-                  
-                  if (_selectedDate != null) {
-                    String formattedSelected = DateFormat('yyyy-MM-dd').format(_selectedDate!);
-                    filteredLogs = state.pendingLogs.where((log) {
-                      return log.date.split('T')[0] == formattedSelected;
-                    }).toList();
-                  }
-
-                  if (filteredLogs.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  // Kelompokkan log berdasarkan tanggal
-                  Map<String, List<MonitoringLogModel>> groupedLogs = {};
-                  for (var log in filteredLogs) {
-                    String dateKey = log.date.split('T')[0];
-                    if (!groupedLogs.containsKey(dateKey)) {
-                      groupedLogs[dateKey] = [];
-                    }
-                    groupedLogs[dateKey]!.add(log);
-                  }
-
-                  var sortedDates = groupedLogs.keys.toList()..sort((a, b) => b.compareTo(a));
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: sortedDates.length,
-                    itemBuilder: (context, dateIndex) {
-                      String dateStr = sortedDates[dateIndex];
-                      DateTime dateObj = DateTime.parse(dateStr);
-                      String formattedHeader = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(dateObj);
-                      List<MonitoringLogModel> logsForDate = groupedLogs[dateStr]!;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today, size: 14, color: AppColors.primaryGreen),
-                                const SizedBox(width: 8),
-                                Text(
-                                  formattedHeader,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: AppColors.primaryGreen,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ...logsForDate.map((log) => _buildWorkerCard(log)),
-                        ],
-                      );
-                    },
-                  );
-                } else if (state is ApprovalError) {
-                  return Center(child: Text(state.message));
+                String name = 'User';
+                if (state is AuthSuccess) {
+                  name = state.user.name;
                 }
-                return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Halo, $name!',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Berikut laporan yang perlu Anda tinjau.',
+                        style: TextStyle(fontSize: 16, color: AppColors.grey),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                );
               },
             ),
-          ),
-        ],
+            _buildFilterBar(),
+            Expanded(
+              child: BlocBuilder<ApprovalBloc, ApprovalState>(
+                builder: (context, state) {
+                  if (state is ApprovalLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryGreen,
+                      ),
+                    );
+                  } else if (state is ApprovalLoaded) {
+                    List<MonitoringLogModel> filteredLogs = state.pendingLogs;
+
+                    if (_selectedDate != null) {
+                      String formattedSelected = DateFormat(
+                        'yyyy-MM-dd',
+                      ).format(_selectedDate!);
+                      filteredLogs = state.pendingLogs.where((log) {
+                        return log.date.split('T')[0] == formattedSelected;
+                      }).toList();
+                    }
+
+                    if (filteredLogs.isEmpty) {
+                      return _buildEmptyState();
+                    }
+
+                    // Kelompokkan log berdasarkan tanggal
+                    Map<String, List<MonitoringLogModel>> groupedLogs = {};
+                    for (var log in filteredLogs) {
+                      String dateKey = log.date.split('T')[0];
+                      if (!groupedLogs.containsKey(dateKey)) {
+                        groupedLogs[dateKey] = [];
+                      }
+                      groupedLogs[dateKey]!.add(log);
+                    }
+
+                    var sortedDates = groupedLogs.keys.toList()
+                      ..sort((a, b) => b.compareTo(a));
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: sortedDates.length,
+                      itemBuilder: (context, dateIndex) {
+                        String dateStr = sortedDates[dateIndex];
+                        DateTime dateObj = DateTime.parse(dateStr);
+                        String formattedHeader = DateFormat(
+                          'EEEE, d MMMM yyyy',
+                          'id_ID',
+                        ).format(dateObj);
+                        List<MonitoringLogModel> logsForDate =
+                            groupedLogs[dateStr]!;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 16,
+                                bottom: 8,
+                                left: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: AppColors.primaryGreen,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    formattedHeader,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: AppColors.primaryGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ...logsForDate.map((log) => _buildWorkerCard(log)),
+                          ],
+                        );
+                      },
+                    );
+                  } else if (state is ApprovalError) {
+                    return Center(child: Text(state.message));
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFilterBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryGreen,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
               onTap: () => _selectDate(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.white,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.lightGreen, width: 1.5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_month, color: AppColors.primaryGreen),
+                    const Icon(
+                      Icons.calendar_month,
+                      color: AppColors.primaryGreen,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       _selectedDate == null
-                          ? 'Pilih Tanggal Laporan'
-                          : DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate!),
+                          ? 'Filter Berdasarkan Tanggal'
+                          : DateFormat(
+                              'd MMMM yyyy',
+                              'id_ID',
+                            ).format(_selectedDate!),
                       style: TextStyle(
-                        color: _selectedDate == null ? Colors.grey : Colors.black87,
+                        color: _selectedDate == null
+                            ? AppColors.grey
+                            : AppColors.black,
                         fontWeight: FontWeight.w500,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -190,9 +238,13 @@ class _ApprovalPageState extends State<ApprovalPage> {
             ),
           ),
           if (_selectedDate != null)
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => setState(() => _selectedDate = null),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: IconButton(
+                icon: const Icon(Icons.refresh, color: AppColors.primaryGreen),
+                onPressed: () => setState(() => _selectedDate = null),
+                tooltip: 'Reset Filter',
+              ),
             ),
         ],
       ),
@@ -204,7 +256,11 @@ class _ApprovalPageState extends State<ApprovalPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_turned_in_outlined, size: 80, color: Colors.grey[300]),
+          Icon(
+            Icons.assignment_turned_in_outlined,
+            size: 80,
+            color: Colors.grey[300],
+          ),
           const SizedBox(height: 16),
           Text(
             _selectedDate == null
@@ -253,7 +309,10 @@ class _ApprovalPageState extends State<ApprovalPage> {
                     color: AppColors.lightGreen.withOpacity(0.3),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, color: AppColors.primaryGreen),
+                  child: const Icon(
+                    Icons.person,
+                    color: AppColors.primaryGreen,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -275,7 +334,11 @@ class _ApprovalPageState extends State<ApprovalPage> {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey,
+                ),
               ],
             ),
           ),

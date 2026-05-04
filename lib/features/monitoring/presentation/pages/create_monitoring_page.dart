@@ -10,6 +10,8 @@ import '../../data/models/task_type_model.dart';
 import '../bloc/monitoring_bloc.dart';
 import '../bloc/monitoring_event.dart';
 import '../bloc/monitoring_state.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class CreateMonitoringPage extends StatefulWidget {
   const CreateMonitoringPage({super.key});
@@ -20,7 +22,7 @@ class CreateMonitoringPage extends StatefulWidget {
 
 class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
   final TextEditingController _workerNameController = TextEditingController();
-  
+
   // Map untuk menyimpan detail yang sudah diisi, key: task_type_id
   final Map<String, Map<String, dynamic>> _filledDetails = {};
   List<TaskTypeModel> _availableTasks = [];
@@ -30,6 +32,12 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     super.initState();
     // Fetch task types saat inisialisasi
     context.read<MonitoringBloc>().add(FetchTaskTypes());
+
+    // Ambil nama user yang login dari AuthBloc
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthSuccess) {
+      _workerNameController.text = authState.user.name;
+    }
   }
 
   @override
@@ -39,14 +47,32 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
   }
 
   void _showDetailDialog(TaskTypeModel task) {
+    // Parse quantity and unit from existing string if available
+    String initialQty = '';
+    String initialUnit = 'Hektar';
+    if (_filledDetails[task.id]?['quantity'] != null) {
+      String fullQty = _filledDetails[task.id]?['quantity'];
+      List<String> parts = fullQty.split(' ');
+      if (parts.length >= 2) {
+        initialQty = parts[0];
+        initialUnit = parts.sublist(1).join(' ');
+      } else {
+        initialQty = fullQty;
+      }
+    }
+
     final TextEditingController qController = TextEditingController(
-      text: _filledDetails[task.id]?['quantity'] ?? '',
+      text: initialQty,
     );
+    String selectedUnit = initialUnit;
     final TextEditingController dController = TextEditingController(
       text: _filledDetails[task.id]?['descriptions'] ?? '',
     );
     final TextEditingController lController = TextEditingController(
       text: _filledDetails[task.id]?['locations'] ?? '',
+    );
+    final TextEditingController nbController = TextEditingController(
+      text: _filledDetails[task.id]?['nomor_baris'] ?? '',
     );
     String selectedCondition = _filledDetails[task.id]?['conditions'] ?? 'BAIK';
     String? localImagePath = _filledDetails[task.id]?['local_image_path'];
@@ -86,11 +112,16 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                       hintText: 'Contoh: Blok A-12',
                       controller: lController,
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.qr_code_scanner, color: AppColors.primaryGreen),
+                        icon: const Icon(
+                          Icons.qr_code_scanner,
+                          color: AppColors.primaryGreen,
+                        ),
                         onPressed: () async {
                           final result = await Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const QrScannerPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const QrScannerPage(),
+                            ),
                           );
                           if (result != null && result is String) {
                             setModalState(() {
@@ -102,12 +133,91 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
-                      label: 'Kuantitas & Satuan',
-                      hintText: 'Contoh: 20 Tandan',
-                      controller: qController,
+                      label: 'Nomor Baris',
+                      hintText: 'Contoh: Baris 15',
+                      controller: nbController,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Kondisi', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: CustomTextField(
+                            label: 'Kuantitas',
+                            hintText: 'Contoh: 20',
+                            controller: qController,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Satuan',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.lightGreen,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value:
+                                        [
+                                          'Hektar',
+                                          'Bedeng',
+                                          'Tph',
+                                          'Pokok',
+                                          'Meter',
+                                        ].contains(selectedUnit)
+                                        ? selectedUnit
+                                        : 'Hektar',
+                                    isExpanded: true,
+                                    items:
+                                        [
+                                          'Hektar',
+                                          'Bedeng',
+                                          'Tph',
+                                          'Pokok',
+                                          'Meter',
+                                        ].map((u) {
+                                          return DropdownMenuItem(
+                                            value: u,
+                                            child: Text(u),
+                                          );
+                                        }).toList(),
+                                    onChanged: (val) {
+                                      if (val != null)
+                                        setModalState(() => selectedUnit = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Kondisi',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     DropdownButton<String>(
                       value: selectedCondition,
                       isExpanded: true,
@@ -115,7 +225,8 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                         return DropdownMenuItem(value: c, child: Text(c));
                       }).toList(),
                       onChanged: (val) {
-                        if (val != null) setModalState(() => selectedCondition = val);
+                        if (val != null)
+                          setModalState(() => selectedCondition = val);
                       },
                     ),
                     const SizedBox(height: 16),
@@ -126,7 +237,10 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                     ),
                     const SizedBox(height: 16),
                     // Image Picker Section
-                    const Text('Foto Bukti', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Dokumentasi',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () async {
@@ -151,8 +265,15 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                           border: Border.all(color: AppColors.lightGreen),
                         ),
                         child: localImagePath != null
-                            ? Image.file(File(localImagePath!), fit: BoxFit.cover)
-                            : const Icon(Icons.camera_alt, size: 40, color: AppColors.grey),
+                            ? Image.file(
+                                File(localImagePath!),
+                                fit: BoxFit.cover,
+                              )
+                            : const Icon(
+                                Icons.camera_alt,
+                                size: 40,
+                                color: AppColors.grey,
+                              ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -161,7 +282,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                       onPressed: () {
                         if (qController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Kuantitas wajib diisi')),
+                            const SnackBar(
+                              content: Text('Kuantitas wajib diisi'),
+                            ),
                           );
                           return;
                         }
@@ -170,9 +293,10 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                           _filledDetails[task.id] = {
                             'task_type_id': task.id,
                             'task_name': task.name,
-                            'quantity': qController.text,
+                            'quantity': '${qController.text} $selectedUnit',
                             'conditions': selectedCondition,
                             'descriptions': dController.text,
+                            'nomor_baris': nbController.text,
                             'locations': lController.text,
                             'photo_path': null, // Will be filled during sync
                             'local_image_path': localImagePath,
@@ -195,9 +319,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
 
   void _onSubmitTotal() {
     if (_workerNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama Pekerja wajib diisi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Nama Pekerja wajib diisi')));
       return;
     }
     if (_filledDetails.isEmpty) {
@@ -208,15 +332,15 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     }
 
     context.read<MonitoringBloc>().add(
-          SaveMonitoringLocally(
-            workerName: _workerNameController.text,
-            details: _filledDetails.values.map((e) {
-              final Map<String, dynamic> detail = Map.from(e);
-              detail.remove('task_name');
-              return detail;
-            }).toList(),
-          ),
-        );
+      SaveMonitoringLocally(
+        workerName: _workerNameController.text,
+        details: _filledDetails.values.map((e) {
+          final Map<String, dynamic> detail = Map.from(e);
+          detail.remove('task_name');
+          return detail;
+        }).toList(),
+      ),
+    );
   }
 
   @override
@@ -226,7 +350,7 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
       appBar: AppBar(
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: AppColors.white,
-        title: const Text('Buat Laporan Baru'),
+        title: const Text('Buat Verifikasi Baru'),
       ),
       body: BlocConsumer<MonitoringBloc, MonitoringState>(
         listener: (context, state) {
@@ -236,12 +360,18 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
             });
           } else if (state is LogCreatedSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.primaryGreen),
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.primaryGreen,
+              ),
             );
             Navigator.pop(context);
           } else if (state is MonitoringError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         },
@@ -252,14 +382,15 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CustomTextField(
-                  label: 'Nama Pekerja',
-                  hintText: 'Masukkan nama pekerja',
+                  label: 'Nama Karyawan',
+                  hintText: 'Masukkan nama karyawan',
                   controller: _workerNameController,
                   prefixIcon: Icons.person_outline,
+                  enabled: false, // Nama otomatis dari login
                 ),
                 const SizedBox(height: 30),
                 const Text(
-                  'DAFTAR TUGAS',
+                  'ITEM PEKERJAAN',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -283,7 +414,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: isFilled ? AppColors.primaryGreen : Colors.grey[300]!,
+                            color: isFilled
+                                ? AppColors.primaryGreen
+                                : Colors.grey[300]!,
                             width: isFilled ? 2 : 1,
                           ),
                         ),
@@ -292,18 +425,29 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                           title: Text(
                             task.name,
                             style: TextStyle(
-                              fontWeight: isFilled ? FontWeight.bold : FontWeight.normal,
-                              color: isFilled ? AppColors.primaryGreen : AppColors.black,
+                              fontWeight: isFilled
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isFilled
+                                  ? AppColors.primaryGreen
+                                  : AppColors.black,
                             ),
                           ),
                           subtitle: Text(
-                            isFilled 
-                              ? 'Lokasi: ${_filledDetails[task.id]?['locations']} - Klik untuk Edit' 
-                              : 'Belum Diisi',
-                            style: TextStyle(color: isFilled ? AppColors.primaryGreen : Colors.grey),
+                            isFilled
+                                ? 'Lokasi: ${_filledDetails[task.id]?['locations']} - Klik untuk Edit'
+                                : 'Belum Diisi',
+                            style: TextStyle(
+                              color: isFilled
+                                  ? AppColors.primaryGreen
+                                  : Colors.grey,
+                            ),
                           ),
                           trailing: isFilled
-                              ? const Icon(Icons.check_circle, color: AppColors.primaryGreen)
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primaryGreen,
+                                )
                               : const Icon(Icons.arrow_forward_ios, size: 16),
                         ),
                       );
@@ -312,7 +456,8 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                 const SizedBox(height: 40),
                 PrimaryButton(
                   text: 'SIMPAN LAPORAN',
-                  isLoading: state is MonitoringLoading && _availableTasks.isNotEmpty,
+                  isLoading:
+                      state is MonitoringLoading && _availableTasks.isNotEmpty,
                   onPressed: _onSubmitTotal,
                 ),
               ],

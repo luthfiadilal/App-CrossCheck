@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2, // Upgraded version
+      version: 3, // Upgraded version
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -33,6 +33,10 @@ class DatabaseHelper {
       await db.execute('DROP TABLE IF EXISTS pending_logs');
       await db.execute('DROP TABLE IF EXISTS task_types');
       await _createDB(db, newVersion);
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE pending_details ADD COLUMN nomor_baris TEXT');
     }
   }
 
@@ -74,6 +78,7 @@ class DatabaseHelper {
         conditions $textNullable,
         photo_path $textNullable,
         descriptions $textNullable,
+        nomor_baris $textNullable,
         locations $textNullable,
         status_task $textNullable,
         created_at $textNullable,

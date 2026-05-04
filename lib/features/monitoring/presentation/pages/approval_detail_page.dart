@@ -128,28 +128,55 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                 ),
                 const SizedBox(height: 24),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _onAction('RE-CHECK'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.orange,
-                          side: const BorderSide(color: Colors.orange),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                    // Final RE-CHECK Button
+                    Column(
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          shape: const CircleBorder(
+                            side: BorderSide(color: Colors.orange, width: 2),
+                          ),
+                          child: IconButton(
+                            onPressed: () => _onAction('RE-CHECK'),
+                            icon: const Icon(Icons.close, color: Colors.orange, size: 30),
+                            padding: const EdgeInsets.all(16),
+                            tooltip: 'Re-Check Semua',
+                          ),
                         ),
-                        child: const Text('RE-CHECK'),
-                      ),
+                        const SizedBox(height: 8),
+                        const Text('RE-CHECK', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: PrimaryButton(
-                        text: 'APPROVE SEMUA',
-                        isLoading: state is ApprovalLoading,
-                        // Hanya aktif jika semua detail sudah APPROVED
-                        onPressed: allApproved
-                            ? () => _onAction('APPROVED')
-                            : null,
-                      ),
+                    const SizedBox(width: 48),
+                    // Final APPROVE ALL Button
+                    Column(
+                      children: [
+                        Material(
+                          color: allApproved ? AppColors.primaryGreen : Colors.grey[200],
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            onPressed: allApproved ? () => _onAction('APPROVED') : null,
+                            icon: Icon(
+                              Icons.check,
+                              color: allApproved ? Colors.white : Colors.grey[400],
+                              size: 30,
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            tooltip: 'Setujui Semua',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'APPROVE',
+                          style: TextStyle(
+                            color: allApproved ? AppColors.primaryGreen : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -260,32 +287,43 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
               ),
             const SizedBox(height: 16),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
+                // Button RECHECK (Icon X)
+                Material(
+                  color: isRecheck ? Colors.orange : Colors.transparent,
+                  shape: const CircleBorder(
+                    side: BorderSide(color: Colors.orange),
+                  ),
+                  child: IconButton(
                     onPressed: isRecheck
                         ? null
                         : () => _onDetailAction(detail.detailId, 'RECHECK'),
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('RECHECK'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.orange,
-                      side: const BorderSide(color: Colors.orange),
+                    icon: Icon(
+                      Icons.close,
+                      color: isRecheck ? Colors.white : Colors.orange,
+                      size: 20,
                     ),
+                    tooltip: 'Recheck',
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
+                // Button APPROVE (Icon Ceklis)
+                Material(
+                  color: isApproved ? Colors.green : Colors.transparent,
+                  shape: const CircleBorder(
+                    side: BorderSide(color: Colors.green),
+                  ),
+                  child: IconButton(
                     onPressed: isApproved
                         ? null
                         : () => _onDetailAction(detail.detailId, 'APPROVED'),
-                    icon: const Icon(Icons.check, size: 18),
-                    label: const Text('APPROVE'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                    icon: Icon(
+                      Icons.check,
+                      color: isApproved ? Colors.white : Colors.green,
+                      size: 20,
                     ),
+                    tooltip: 'Approve',
                   ),
                 ),
               ],
