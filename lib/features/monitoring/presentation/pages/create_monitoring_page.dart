@@ -74,6 +74,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     final TextEditingController nbController = TextEditingController(
       text: _filledDetails[task.id]?['nomor_baris'] ?? '',
     );
+    final TextEditingController naController = TextEditingController(
+      text: _filledDetails[task.id]?['nama_anggota'] ?? '',
+    );
     String selectedCondition = _filledDetails[task.id]?['conditions'] ?? 'BAIK';
     String? localImagePath = _filledDetails[task.id]?['local_image_path'];
 
@@ -109,8 +112,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                     const SizedBox(height: 20),
                     CustomTextField(
                       label: 'Lokasi / Blok',
-                      hintText: 'Contoh: Blok A-12',
+                      hintText: 'Scan QR untuk Lokasi',
                       controller: lController,
+                      readOnly: true,
                       suffixIcon: IconButton(
                         icon: const Icon(
                           Icons.qr_code_scanner,
@@ -136,6 +140,12 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                       label: 'Nomor Baris',
                       hintText: 'Contoh: Baris 15',
                       controller: nbController,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      label: 'Nama Anggota',
+                      hintText: 'Contoh: Budi Santoso',
+                      controller: naController,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -297,6 +307,7 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                             'conditions': selectedCondition,
                             'descriptions': dController.text,
                             'nomor_baris': nbController.text,
+                            'nama_anggota': naController.text,
                             'locations': lController.text,
                             'photo_path': null, // Will be filled during sync
                             'local_image_path': localImagePath,
@@ -382,7 +393,7 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CustomTextField(
-                  label: 'Nama Karyawan',
+                  label: 'Nama Verifikator',
                   hintText: 'Masukkan nama karyawan',
                   controller: _workerNameController,
                   prefixIcon: Icons.person_outline,

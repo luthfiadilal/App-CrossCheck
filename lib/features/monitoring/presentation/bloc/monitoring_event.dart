@@ -9,6 +9,8 @@ abstract class MonitoringEvent extends Equatable {
 
 class FetchLogs extends MonitoringEvent {}
 
+class FetchOfflineLogs extends MonitoringEvent {}
+
 class FetchTaskTypes extends MonitoringEvent {}
 
 class SubmitMonitoring extends MonitoringEvent {

@@ -96,9 +96,52 @@ class MonitoringRepository {
           'status_task': 'PENDING',
           'created_at': now,
           'local_image_path': detail['local_image_path'],
+          'nama_anggota': detail['nama_anggota'],
         });
       }
     });
+  }
+
+  Future<List<MonitoringLogModel>> fetchOfflineLogs() async {
+    final db = await _dbHelper.database;
+    
+    final List<Map<String, dynamic>> logs = await db.query('pending_logs', orderBy: 'created_at DESC');
+    List<MonitoringLogModel> results = [];
+
+    for (var log in logs) {
+      final List<Map<String, dynamic>> detailsRaw = await db.rawQuery('''
+        SELECT d.*, t.name as task_name
+        FROM pending_details d
+        LEFT JOIN task_types t ON d.task_type_id = t.id
+        WHERE d.log_local_id = ?
+      ''', [log['id']]);
+      
+      List<MonitoringDetailModel> details = detailsRaw.map((d) {
+        return MonitoringDetailModel(
+          detailId: 'LOCAL-${d['id']}',
+          taskName: d['task_name'] ?? 'Tugas Tidak Diketahui',
+          quantity: d['quantity'] ?? '0',
+          condition: d['conditions'] ?? 'BAIK',
+          photoPath: d['local_image_path'] ?? '', // Use local path for offline view
+          description: d['descriptions'] ?? '',
+          nomorBaris: d['nomor_baris'] ?? '',
+          location: d['locations'] ?? '',
+          statusTask: d['status_task'] ?? 'PENDING',
+          namaAnggota: d['nama_anggota'] ?? '',
+        );
+      }).toList();
+
+      results.add(MonitoringLogModel(
+        id: 'LOCAL-${log['id']}',
+        date: log['created_at'] ?? '',
+        workerName: log['worker_name'] ?? '',
+        mandorName: 'Anda (Offline)',
+        status: log['status_approval'] ?? 'PENDING',
+        details: details,
+      ));
+    }
+
+    return results;
   }
 
   Future<List<Map<String, dynamic>>> getPendingLogs() async {
@@ -121,9 +164,7 @@ class MonitoringRepository {
         'created_at': log['created_at'],
         'updated_at': log['updated_at'],
         'details': details.map((d) {
-          // Create a mutable map
-          final map = Map<String, dynamic>.from(d);
-          return map;
+          return Map<String, dynamic>.from(d);
         }).toList(),
       });
     }
@@ -253,6 +294,14 @@ class MonitoringRepository {
     if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
       return 'Koneksi internet bermasalah. Silakan coba lagi.';
     }
+
+    if (e.response?.statusCode == 503) {
+      return 'Server sedang dalam pemeliharaan (503). Silakan coba beberapa saat lagi.';
+    }
+
+    if (e.response?.statusCode == 404) {
+      return 'Endpoint tidak ditemukan (404).';
+    }
     
     if (e.response != null && e.response?.data != null) {
       final data = e.response?.data;
@@ -261,6 +310,6 @@ class MonitoringRepository {
       }
     }
     
-    return e.message ?? defaultMessage;
+    return 'Terjadi kesalahan sistem. Silakan coba lagi.';
   }
 }

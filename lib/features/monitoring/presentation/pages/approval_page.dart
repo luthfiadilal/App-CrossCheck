@@ -179,7 +179,7 @@ class _ApprovalPageState extends State<ApprovalPage> {
                       },
                     );
                   } else if (state is ApprovalError) {
-                    return Center(child: Text(state.message));
+                    return _buildErrorState(state.message);
                   }
                   return const SizedBox();
                 },
@@ -343,6 +343,37 @@ class _ApprovalPageState extends State<ApprovalPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => context.read<ApprovalBloc>().add(FetchPendingApprovals()),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Coba Lagi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

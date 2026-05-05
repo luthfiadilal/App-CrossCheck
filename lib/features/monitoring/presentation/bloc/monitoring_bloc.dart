@@ -8,6 +8,7 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
 
   MonitoringBloc() : super(MonitoringInitial()) {
     on<FetchLogs>(_onFetchLogs);
+    on<FetchOfflineLogs>(_onFetchOfflineLogs);
     on<FetchTaskTypes>(_onFetchTaskTypes);
     on<SubmitMonitoring>(_onSubmitMonitoring);
     on<SaveMonitoringLocally>(_onSaveMonitoringLocally);
@@ -19,6 +20,16 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     emit(MonitoringLoading());
     try {
       final logs = await _monitoringRepository.fetchLogs();
+      emit(MonitoringLoaded(logs));
+    } catch (e) {
+      emit(MonitoringError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  void _onFetchOfflineLogs(FetchOfflineLogs event, Emitter<MonitoringState> emit) async {
+    emit(MonitoringLoading());
+    try {
+      final logs = await _monitoringRepository.fetchOfflineLogs();
       emit(MonitoringLoaded(logs));
     } catch (e) {
       emit(MonitoringError(e.toString().replaceAll('Exception: ', '')));

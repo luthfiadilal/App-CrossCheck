@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3, // Upgraded version
+      version: 4, // Upgraded version
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -37,6 +37,10 @@ class DatabaseHelper {
 
     if (oldVersion < 3) {
       await db.execute('ALTER TABLE pending_details ADD COLUMN nomor_baris TEXT');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE pending_details ADD COLUMN nama_anggota TEXT');
     }
   }
 
@@ -83,6 +87,7 @@ class DatabaseHelper {
         status_task $textNullable,
         created_at $textNullable,
         local_image_path $textNullable,
+        nama_anggota $textNullable,
         FOREIGN KEY (log_local_id) REFERENCES pending_logs (id) ON DELETE CASCADE
       )
     ''');

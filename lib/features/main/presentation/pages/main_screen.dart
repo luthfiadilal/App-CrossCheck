@@ -1,9 +1,13 @@
+import 'package:crosscheck/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:crosscheck/features/auth/presentation/bloc/auth_state.dart';
+import 'package:crosscheck/features/auth/presentation/pages/login_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/approval_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/mandor_history_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/mandor_home_page.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/qr_generator_page.dart';
 import 'package:crosscheck/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class MainScreen extends StatefulWidget {
@@ -61,16 +65,26 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        backgroundColor: AppColors.white,
-        selectedItemColor: AppColors.primaryGreen,
-        unselectedItemColor: AppColors.grey,
-        type: BottomNavigationBarType.fixed, // Added for 4 items
-        items: _navItems,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthInitial) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+        }
+      },
+      child: Scaffold(
+        body: _pages[_currentIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          backgroundColor: AppColors.white,
+          selectedItemColor: AppColors.primaryGreen,
+          unselectedItemColor: AppColors.grey,
+          type: BottomNavigationBarType.fixed, // Added for 4 items
+          items: _navItems,
+        ),
       ),
     );
   }

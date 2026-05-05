@@ -18,9 +18,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
-    await _authRepository.clearSession();
-    emit(AuthInitial());
+    try {
+      emit(AuthLoading());
+      await _authRepository.clearSession();
+      emit(AuthInitial());
+    } catch (e) {
+      emit(AuthInitial());
+    }
   }
 
   void _onCheckSession(CheckSession event, Emitter<AuthState> emit) async {

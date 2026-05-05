@@ -8,6 +8,7 @@ class MonitoringDetailModel {
   final String nomorBaris;
   final String location;
   final String statusTask;
+  final String namaAnggota;
 
   MonitoringDetailModel({
     required this.detailId,
@@ -19,6 +20,7 @@ class MonitoringDetailModel {
     required this.nomorBaris,
     required this.location,
     required this.statusTask,
+    required this.namaAnggota,
   });
 
   factory MonitoringDetailModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class MonitoringDetailModel {
       nomorBaris: json['nomor_baris'] ?? '',
       location: json['locations'] ?? '',
       statusTask: json['status_task'] ?? 'PENDING',
+      namaAnggota: json['nama_anggota'] ?? '',
     );
   }
 }
@@ -87,4 +90,5 @@ class MonitoringLogModel {
   String get taskName => details.isNotEmpty ? details[0].taskName : 'Tanpa Tugas';
   String get quantity => details.isNotEmpty ? details[0].quantity : '0';
   String get nomorBaris => details.isNotEmpty ? details[0].nomorBaris : 'N/A';
+  String get namaAnggota => details.isNotEmpty ? details[0].namaAnggota : 'N/A';
 }

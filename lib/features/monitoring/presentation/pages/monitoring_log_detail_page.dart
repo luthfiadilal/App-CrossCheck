@@ -51,7 +51,7 @@ class MonitoringLogDetailPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  ...log.details.map((detail) => _buildDetailCard(detail)),
+                  ...log.details.map((detail) => _buildDetailCard(context, detail)),
                 ],
               ),
             ),
@@ -148,7 +148,7 @@ class MonitoringLogDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailCard(MonitoringDetailModel detail) {
+  Widget _buildDetailCard(BuildContext context, MonitoringDetailModel detail) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -191,6 +191,8 @@ class MonitoringLogDetailPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildInfoRow(Icons.format_list_numbered_outlined, 'Nomor Baris', detail.nomorBaris),
                 const SizedBox(height: 8),
+                _buildInfoRow(Icons.person_pin_outlined, 'Nama Anggota', detail.namaAnggota),
+                const SizedBox(height: 8),
                 _buildInfoRow(Icons.monitor_weight_outlined, 'Kuantitas', detail.quantity),
                 if (detail.description.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -202,23 +204,80 @@ class MonitoringLogDetailPage extends StatelessWidget {
           if (detail.photoPath.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
+              child: GestureDetector(
+                onTap: () => _showFullScreenImage(
+                  context,
                   'https://api.crosscheck.my.id${detail.photoPath}',
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    'https://api.crosscheck.my.id${detail.photoPath}',
                     height: 200,
                     width: double.infinity,
-                    color: Colors.grey[100],
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 200,
+                      width: double.infinity,
+                      color: Colors.grey[100],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
                   ),
                 ),
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.black.withOpacity(0.9),
+              ),
+            ),
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  color: Colors.white,
+                  size: 50,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
