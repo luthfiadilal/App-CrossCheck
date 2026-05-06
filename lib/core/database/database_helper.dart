@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4, // Upgraded version
+      version: 6, // Upgraded version
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -27,8 +27,6 @@ class DatabaseHelper {
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Simplest way for this exercise is to drop and recreate, 
-      // but in production we should use ALTER TABLE
       await db.execute('DROP TABLE IF EXISTS pending_details');
       await db.execute('DROP TABLE IF EXISTS pending_logs');
       await db.execute('DROP TABLE IF EXISTS task_types');
@@ -41,6 +39,23 @@ class DatabaseHelper {
 
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE pending_details ADD COLUMN nama_anggota TEXT');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE pending_photos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          detail_local_id INTEGER NOT NULL,
+          photo_path TEXT NOT NULL,
+          caption TEXT,
+          created_at TEXT,
+          FOREIGN KEY (detail_local_id) REFERENCES pending_details (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE pending_logs ADD COLUMN server_log_id TEXT');
     }
   }
 
@@ -59,7 +74,6 @@ class DatabaseHelper {
     ''');
 
     // Table for pending monitoring logs (header)
-    // Matches tr_monitoring_log fields
     await db.execute('''
       CREATE TABLE pending_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,12 +81,12 @@ class DatabaseHelper {
         mandor_id $textNullable,
         status_approval $textNullable,
         created_at $textNullable,
-        updated_at $textNullable
+        updated_at $textNullable,
+        server_log_id $textNullable
       )
     ''');
 
     // Table for pending monitoring details
-    // Matches tr_monitoring_detail fields
     await db.execute('''
       CREATE TABLE pending_details (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,6 +103,18 @@ class DatabaseHelper {
         local_image_path $textNullable,
         nama_anggota $textNullable,
         FOREIGN KEY (log_local_id) REFERENCES pending_logs (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Table for pending photos
+    await db.execute('''
+      CREATE TABLE pending_photos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        detail_local_id INTEGER NOT NULL,
+        photo_path TEXT NOT NULL,
+        caption TEXT,
+        created_at TEXT,
+        FOREIGN KEY (detail_local_id) REFERENCES pending_details (id) ON DELETE CASCADE
       )
     ''');
   }

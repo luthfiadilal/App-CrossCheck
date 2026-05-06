@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crosscheck/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:crosscheck/features/auth/presentation/widgets/primary_button.dart';
+import 'package:crosscheck/features/monitoring/data/models/monitoring_log_model.dart';
 import 'package:crosscheck/features/monitoring/presentation/pages/qr_scanner_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,7 +15,8 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
 class CreateMonitoringPage extends StatefulWidget {
-  const CreateMonitoringPage({super.key});
+  final MonitoringLogModel? initialLog;
+  const CreateMonitoringPage({super.key, this.initialLog});
 
   @override
   State<CreateMonitoringPage> createState() => _CreateMonitoringPageState();
@@ -33,10 +35,30 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
     // Fetch task types saat inisialisasi
     context.read<MonitoringBloc>().add(FetchTaskTypes());
 
-    // Ambil nama user yang login dari AuthBloc
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthSuccess) {
-      _workerNameController.text = authState.user.name;
+    if (widget.initialLog != null) {
+      _workerNameController.text = widget.initialLog!.workerName;
+      for (var detail in widget.initialLog!.details) {
+        _filledDetails[detail.taskTypeId] = {
+          'task_type_id': detail.taskTypeId,
+          'task_name': detail.taskName,
+          'quantity': detail.quantity,
+          'conditions': detail.condition,
+          'descriptions': detail.description,
+          'nomor_baris': detail.nomorBaris,
+          'nama_anggota': detail.namaAnggota,
+          'locations': detail.location,
+          'status_task': detail.statusTask,
+          'photos': detail.photos
+              .map((p) => {'photo_path': p.photoPath, 'caption': p.caption})
+              .toList(),
+        };
+      }
+    } else {
+      // Ambil nama user yang login dari AuthBloc
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthSuccess) {
+        _workerNameController.text = authState.user.name;
+      }
     }
   }
 
@@ -78,7 +100,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
       text: _filledDetails[task.id]?['nama_anggota'] ?? '',
     );
     String selectedCondition = _filledDetails[task.id]?['conditions'] ?? 'BAIK';
-    String? localImagePath = _filledDetails[task.id]?['local_image_path'];
+    List<Map<String, dynamic>> localPhotos = List<Map<String, dynamic>>.from(
+      _filledDetails[task.id]?['photos'] ?? [],
+    );
 
     showModalBottomSheet(
       context: context,
@@ -247,45 +271,122 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                     ),
                     const SizedBox(height: 16),
                     // Image Picker Section
-                    const Text(
-                      'Dokumentasi',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Dokumentasi (Foto)',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton.icon(
+                          onPressed: () async {
+                            final picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 50,
+                              maxWidth: 1024,
+                              maxHeight: 1024,
+                            );
+                            if (image != null) {
+                              setModalState(() {
+                                localPhotos.add({
+                                  'photo_path': image.path,
+                                  'caption': '',
+                                });
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.add_a_photo, size: 18),
+                          label: const Text('Tambah Foto'),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final picker = ImagePicker();
-                        final XFile? image = await picker.pickImage(
-                          source: ImageSource.camera,
-                          imageQuality: 50,
-                          maxWidth: 1024,
-                          maxHeight: 1024,
-                        );
-                        if (image != null) {
-                          setModalState(() {
-                            localImagePath = image.path;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 150,
+                    if (localPhotos.isEmpty)
+                      Container(
+                        height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                          color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.lightGreen),
+                          border: Border.all(color: Colors.grey[300]!),
                         ),
-                        child: localImagePath != null
-                            ? Image.file(
-                                File(localImagePath!),
-                                fit: BoxFit.cover,
-                              )
-                            : const Icon(
-                                Icons.camera_alt,
-                                size: 40,
-                                color: AppColors.grey,
-                              ),
+                        child: const Center(
+                          child: Text(
+                            'Belum ada foto',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: localPhotos.length,
+                        itemBuilder: (context, idx) {
+                          final photo = localPhotos[idx];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.lightGreen),
+                            ),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(photo['photo_path']),
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    decoration: const InputDecoration(
+                                      hintText: 'Tambah caption...',
+                                      border: InputBorder.none,
+                                      hintStyle: TextStyle(fontSize: 12),
+                                    ),
+                                    style: const TextStyle(fontSize: 13),
+                                    onChanged: (val) {
+                                      photo['caption'] = val;
+                                    },
+                                    controller:
+                                        TextEditingController(
+                                            text: photo['caption'],
+                                          )
+                                          ..selection =
+                                              TextSelection.fromPosition(
+                                                TextPosition(
+                                                  offset:
+                                                      (photo['caption']
+                                                              as String)
+                                                          .length,
+                                                ),
+                                              ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      localPhotos.removeAt(idx);
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ),
                     const SizedBox(height: 24),
                     PrimaryButton(
                       text: 'SIMPAN DETAIL',
@@ -309,8 +410,9 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                             'nomor_baris': nbController.text,
                             'nama_anggota': naController.text,
                             'locations': lController.text,
-                            'photo_path': null, // Will be filled during sync
-                            'local_image_path': localImagePath,
+                            'photos': localPhotos,
+                            'status_task':
+                                'PENDING', // Diubah jadi PENDING karena ada interaksi edit
                           };
                         });
 
@@ -342,16 +444,32 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
       return;
     }
 
-    context.read<MonitoringBloc>().add(
-      SaveMonitoringLocally(
-        workerName: _workerNameController.text,
-        details: _filledDetails.values.map((e) {
-          final Map<String, dynamic> detail = Map.from(e);
-          detail.remove('task_name');
-          return detail;
-        }).toList(),
-      ),
-    );
+    if (widget.initialLog != null &&
+        widget.initialLog!.id.startsWith('LOCAL-')) {
+      final localId = int.parse(widget.initialLog!.id.split('-').last);
+      context.read<MonitoringBloc>().add(
+        UpdateMonitoringLocally(
+          localId: localId,
+          workerName: _workerNameController.text,
+          details: _filledDetails.values.map((e) {
+            final Map<String, dynamic> detail = Map.from(e);
+            detail.remove('task_name');
+            return detail;
+          }).toList(),
+        ),
+      );
+    } else {
+      context.read<MonitoringBloc>().add(
+        SaveMonitoringLocally(
+          workerName: _workerNameController.text,
+          details: _filledDetails.values.map((e) {
+            final Map<String, dynamic> detail = Map.from(e);
+            detail.remove('task_name');
+            return detail;
+          }).toList(),
+        ),
+      );
+    }
   }
 
   @override
@@ -361,7 +479,11 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
       appBar: AppBar(
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: AppColors.white,
-        title: const Text('Buat Verifikasi Baru'),
+        title: Text(
+          widget.initialLog != null
+              ? 'Edit Verifikasi'
+              : 'Buat Verifikasi Baru',
+        ),
       ),
       body: BlocConsumer<MonitoringBloc, MonitoringState>(
         listener: (context, state) {

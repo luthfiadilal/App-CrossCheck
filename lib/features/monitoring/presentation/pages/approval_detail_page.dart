@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/approval_bloc.dart';
 import '../bloc/approval_event.dart';
@@ -140,13 +141,24 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                           ),
                           child: IconButton(
                             onPressed: () => _onAction('RE-CHECK'),
-                            icon: const Icon(Icons.close, color: Colors.orange, size: 30),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.orange,
+                              size: 30,
+                            ),
                             padding: const EdgeInsets.all(16),
                             tooltip: 'Re-Check Semua',
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text('RE-CHECK', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                        const Text(
+                          'RE-CHECK',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(width: 48),
@@ -154,13 +166,19 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                     Column(
                       children: [
                         Material(
-                          color: allApproved ? AppColors.primaryGreen : Colors.grey[200],
+                          color: allApproved
+                              ? AppColors.primaryGreen
+                              : Colors.grey[200],
                           shape: const CircleBorder(),
                           child: IconButton(
-                            onPressed: allApproved ? () => _onAction('APPROVED') : null,
+                            onPressed: allApproved
+                                ? () => _onAction('APPROVED')
+                                : null,
                             icon: Icon(
                               Icons.check,
-                              color: allApproved ? Colors.white : Colors.grey[400],
+                              color: allApproved
+                                  ? Colors.white
+                                  : Colors.grey[400],
                               size: 30,
                             ),
                             padding: const EdgeInsets.all(16),
@@ -171,7 +189,9 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                         Text(
                           'APPROVE',
                           style: TextStyle(
-                            color: allApproved ? AppColors.primaryGreen : Colors.grey,
+                            color: allApproved
+                                ? AppColors.primaryGreen
+                                : Colors.grey,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -209,7 +229,12 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
         children: [
           _buildHeaderRow('ID Laporan', _currentLog.id),
           _buildHeaderRow('Nama Pekerja', _currentLog.workerName),
-          _buildHeaderRow('Tanggal', _currentLog.date),
+          _buildHeaderRow(
+            'Tanggal',
+            DateFormat(
+              'dd MMM yyyy, HH:mm',
+            ).format(DateTime.parse(_currentLog.date).toLocal()),
+          ),
           _buildHeaderRow('Status Log', _currentLog.status),
         ],
       ),
@@ -270,19 +295,49 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
             if (detail.description.isNotEmpty)
               Text('Ket: ${detail.description}'),
             const SizedBox(height: 12),
-            if (detail.photoPath.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  'https://api.crosscheck.my.id${detail.photoPath}',
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                  ),
+            if (detail.photos.isNotEmpty)
+              SizedBox(
+                height: 150,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: detail.photos.length,
+                  itemBuilder: (context, idx) {
+                    final photo = detail.photos[idx];
+                    return Container(
+                      width: 120,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              'https://api.crosscheck.my.id${photo.photoPath}',
+                              height: 100,
+                              width: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: 100,
+                                width: 120,
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                          if (photo.caption.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                photo.caption,
+                                style: const TextStyle(fontSize: 10, color: Colors.black54),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             const SizedBox(height: 16),

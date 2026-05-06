@@ -7,6 +7,7 @@ import '../bloc/monitoring_event.dart';
 import '../bloc/monitoring_state.dart';
 import '../widgets/status_badge.dart';
 import 'monitoring_log_detail_page.dart';
+import 'create_monitoring_page.dart';
 
 class MandorHistoryPage extends StatefulWidget {
   const MandorHistoryPage({super.key});
@@ -72,59 +73,82 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
               _buildFilterBar(),
               _buildTabBar(),
               Expanded(
-                child: BlocBuilder<MonitoringBloc, MonitoringState>(
-                  builder: (context, state) {
-                    if (state is MonitoringLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primaryGreen,
+                child: BlocListener<MonitoringBloc, MonitoringState>(
+                  listener: (context, state) {
+                    if (state is LogCreatedSuccess &&
+                        state.message.contains('siap untuk diperbaiki')) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: AppColors.primaryGreen,
                         ),
                       );
                     } else if (state is MonitoringError) {
-                      return _buildErrorState(state.message);
-                    } else if (state is MonitoringLoaded) {
-                      var allLogs = state.logs;
-
-                      if (_selectedDate != null) {
-                        String formattedSelected = DateFormat(
-                          'yyyy-MM-dd',
-                        ).format(_selectedDate!);
-                        allLogs = allLogs
-                            .where(
-                              (log) =>
-                                  log.date.split('T')[0] == formattedSelected,
-                            )
-                            .toList();
-                      }
-
-                      return TabBarView(
-                        children: [
-                          _buildLogList(
-                            allLogs
-                                .where(
-                                  (l) => l.status.toUpperCase() == 'PENDING',
-                                )
-                                .toList(),
-                          ),
-                          _buildLogList(
-                            allLogs
-                                .where(
-                                  (l) => l.status.toUpperCase() == 'RECHECK',
-                                )
-                                .toList(),
-                          ),
-                          _buildLogList(
-                            allLogs
-                                .where(
-                                  (l) => l.status.toUpperCase() == 'APPROVED',
-                                )
-                                .toList(),
-                          ),
-                        ],
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                     }
-                    return const SizedBox();
                   },
+                  child: BlocBuilder<MonitoringBloc, MonitoringState>(
+                    builder: (context, state) {
+                      if (state is MonitoringLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryGreen,
+                          ),
+                        );
+                      } else if (state is MonitoringError) {
+                        return _buildErrorState(state.message);
+                      } else if (state is MonitoringLoaded) {
+                        var allLogs = state.logs;
+
+                        if (_selectedDate != null) {
+                          String formattedSelected = DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(_selectedDate!);
+                          allLogs = allLogs
+                              .where(
+                                (log) =>
+                                    DateFormat('yyyy-MM-dd').format(
+                                      DateTime.parse(log.date).toLocal(),
+                                    ) ==
+                                    formattedSelected,
+                              )
+                              .toList();
+                        }
+
+                        return TabBarView(
+                          children: [
+                            _buildLogList(
+                              allLogs
+                                  .where(
+                                    (l) => l.status.toUpperCase() == 'PENDING',
+                                  )
+                                  .toList(),
+                            ),
+                            _buildLogList(
+                              allLogs
+                                  .where(
+                                    (l) => l.status.toUpperCase() == 'RE-CHECK',
+                                  )
+                                  .toList(),
+                            ),
+                            _buildLogList(
+                              allLogs
+                                  .where(
+                                    (l) => l.status.toUpperCase() == 'APPROVED',
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox();
+                    },
+                  ),
                 ),
               ),
             ],
@@ -173,7 +197,7 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
       itemCount: logs.length,
       itemBuilder: (context, index) {
         final log = logs[index];
-        DateTime logDate = DateTime.parse(log.date);
+        DateTime logDate = DateTime.parse(log.date).toLocal();
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -192,12 +216,21 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MonitoringLogDetailPage(log: log),
-                  ),
-                );
+                if (_isOfflineMode) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateMonitoringPage(initialLog: log),
+                    ),
+                  ).then((_) => _fetchData()); // Refresh after return
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MonitoringLogDetailPage(log: log),
+                    ),
+                  );
+                }
               },
               borderRadius: BorderRadius.circular(20),
               child: ClipRRect(
@@ -259,6 +292,45 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
                                     log.workerName,
                                     Colors.blue,
                                   ),
+                                  if (log.status.toUpperCase() == 'RE-CHECK')
+                                    GestureDetector(
+                                      onTap: () {
+                                        context.read<MonitoringBloc>().add(
+                                          DownloadLogForEdit(log),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.edit,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Perbaiki',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ],
@@ -470,7 +542,7 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tanpa Internet',
+                          'Offline',
                           style: TextStyle(
                             color: _isOfflineMode ? Colors.orange : Colors.grey,
                             fontWeight: FontWeight.bold,

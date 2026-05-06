@@ -75,8 +75,6 @@ flutter_native_splash:
   android_gravity: center
   ios_content_mode: center
 
-
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

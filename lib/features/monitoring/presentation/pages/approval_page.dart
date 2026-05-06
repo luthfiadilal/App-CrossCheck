@@ -108,7 +108,7 @@ class _ApprovalPageState extends State<ApprovalPage> {
                         'yyyy-MM-dd',
                       ).format(_selectedDate!);
                       filteredLogs = state.pendingLogs.where((log) {
-                        return log.date.split('T')[0] == formattedSelected;
+                        return DateFormat('yyyy-MM-dd').format(DateTime.parse(log.date).toLocal()) == formattedSelected;
                       }).toList();
                     }
 
@@ -119,7 +119,7 @@ class _ApprovalPageState extends State<ApprovalPage> {
                     // Kelompokkan log berdasarkan tanggal
                     Map<String, List<MonitoringLogModel>> groupedLogs = {};
                     for (var log in filteredLogs) {
-                      String dateKey = log.date.split('T')[0];
+                      String dateKey = DateFormat('yyyy-MM-dd').format(DateTime.parse(log.date).toLocal());
                       if (!groupedLogs.containsKey(dateKey)) {
                         groupedLogs[dateKey] = [];
                       }
@@ -137,7 +137,8 @@ class _ApprovalPageState extends State<ApprovalPage> {
                       itemCount: sortedDates.length,
                       itemBuilder: (context, dateIndex) {
                         String dateStr = sortedDates[dateIndex];
-                        DateTime dateObj = DateTime.parse(dateStr);
+                        // dateStr is already in yyyy-MM-dd format from the key
+                        DateTime dateObj = DateFormat('yyyy-MM-dd').parse(dateStr);
                         String formattedHeader = DateFormat(
                           'EEEE, d MMMM yyyy',
                           'id_ID',

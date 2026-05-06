@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/monitoring_log_model.dart';
+import '../bloc/monitoring_bloc.dart';
+import '../bloc/monitoring_event.dart';
+import '../bloc/monitoring_state.dart';
 import '../widgets/status_badge.dart';
 
 class MonitoringLogDetailPage extends StatelessWidget {
@@ -11,8 +17,11 @@ class MonitoringLogDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    DateTime logDate = DateTime.parse(log.date);
-    String formattedDate = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(logDate);
+    DateTime logDate = DateTime.parse(log.date).toLocal();
+    String formattedDate = DateFormat(
+      'EEEE, d MMMM yyyy',
+      'id_ID',
+    ).format(logDate);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -25,37 +34,114 @@ class MonitoringLogDetailPage extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(context, formattedDate),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.list_alt, color: AppColors.primaryGreen),
-                      SizedBox(width: 8),
-                      Text(
-                        'DAFTAR TUGAS',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: AppColors.primaryGreen,
+      body: BlocListener<MonitoringBloc, MonitoringState>(
+        listener: (context, state) {
+          if (state is LogCreatedSuccess &&
+              state.message.contains('siap untuk diperbaiki')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.primaryGreen,
+              ),
+            );
+            Navigator.pop(context);
+          } else if (state is MonitoringError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context, formattedDate),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (log.status == 'RE-CHECK') ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Perlu Perbaikan (RE-CHECK)',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Laporan ini perlu diperbaiki. Anda dapat mendownload kembali data ini ke daftar PENDING untuk diedit di lapangan.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                context.read<MonitoringBloc>().add(
+                                  DownloadLogForEdit(log),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const Icon(Icons.download_rounded),
+                              label: const Text('Download untuk Edit'),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 24),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  ...log.details.map((detail) => _buildDetailCard(context, detail)),
-                ],
+                    const Row(
+                      children: [
+                        Icon(Icons.list_alt, color: AppColors.primaryGreen),
+                        SizedBox(width: 8),
+                        Text(
+                          'DAFTAR TUGAS',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ...log.details.map(
+                      (detail) => _buildDetailCard(context, detail),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -112,9 +198,17 @@ class MonitoringLogDetailPage extends StatelessWidget {
                   ],
                 ),
                 const Divider(height: 32),
-                _buildHeaderInfo(Icons.person_outline, 'Nama Pekerja', log.workerName),
+                _buildHeaderInfo(
+                  Icons.person_outline,
+                  'Nama Verifikator',
+                  log.workerName,
+                ),
                 const SizedBox(height: 12),
-                _buildHeaderInfo(Icons.calendar_today_outlined, 'Tanggal', formattedDate),
+                _buildHeaderInfo(
+                  Icons.calendar_today_outlined,
+                  'Tanggal',
+                  formattedDate,
+                ),
               ],
             ),
           ),
@@ -137,10 +231,7 @@ class MonitoringLogDetailPage extends StatelessWidget {
             ),
             Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ],
         ),
@@ -187,43 +278,139 @@ class MonitoringLogDetailPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildInfoRow(Icons.location_on_outlined, 'Lokasi', detail.location),
+                _buildInfoRow(
+                  Icons.location_on_outlined,
+                  'Lokasi',
+                  detail.location,
+                ),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.format_list_numbered_outlined, 'Nomor Baris', detail.nomorBaris),
+                _buildInfoRow(
+                  Icons.format_list_numbered_outlined,
+                  'Nomor Baris',
+                  detail.nomorBaris,
+                ),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.person_pin_outlined, 'Nama Anggota', detail.namaAnggota),
+                _buildInfoRow(
+                  Icons.person_pin_outlined,
+                  'Nama Anggota',
+                  detail.namaAnggota,
+                ),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.monitor_weight_outlined, 'Kuantitas', detail.quantity),
+                _buildInfoRow(
+                  Icons.monitor_weight_outlined,
+                  'Kuantitas',
+                  detail.quantity,
+                ),
                 if (detail.description.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.description_outlined, 'Keterangan', detail.description),
+                  _buildInfoRow(
+                    Icons.description_outlined,
+                    'Keterangan',
+                    detail.description,
+                  ),
                 ],
               ],
             ),
           ),
-          if (detail.photoPath.isNotEmpty)
+          if (detail.photos.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: GestureDetector(
-                onTap: () => _showFullScreenImage(
-                  context,
-                  'https://api.crosscheck.my.id${detail.photoPath}',
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    'https://api.crosscheck.my.id${detail.photoPath}',
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 200,
-                      width: double.infinity,
-                      color: Colors.grey[100],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Dokumentasi:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: detail.photos.length,
+                      itemBuilder: (context, idx) {
+                        final photo = detail.photos[idx];
+                        final fullImageUrl = photo.photoPath.startsWith('http')
+                            ? photo.photoPath
+                            : (photo.photoPath.startsWith('/')
+                                  ? 'https://api.crosscheck.my.id${photo.photoPath}'
+                                  : photo
+                                        .photoPath); // Handle local path if needed
+
+                        return Container(
+                          width: 140,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () =>
+                                    _showFullScreenImage(context, fullImageUrl),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child:
+                                      photo.photoPath.startsWith('/') ||
+                                          photo.photoPath.startsWith('http')
+                                      ? Image.network(
+                                          fullImageUrl,
+                                          height: 120,
+                                          width: 140,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    height: 120,
+                                                    width: 140,
+                                                    color: Colors.grey[100],
+                                                    child: const Icon(
+                                                      Icons.broken_image,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                        )
+                                      : Image.file(
+                                          File(photo.photoPath),
+                                          height: 120,
+                                          width: 140,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    height: 120,
+                                                    width: 140,
+                                                    color: Colors.grey[100],
+                                                    child: const Icon(
+                                                      Icons.broken_image,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                        ),
+                                ),
+                              ),
+                              if (photo.caption.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  photo.caption,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black87,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -291,10 +478,20 @@ class MonitoringLogDetailPage extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: const TextStyle(color: Colors.black87, fontSize: 13, fontFamily: 'Roboto'),
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontFamily: 'Roboto',
+              ),
               children: [
-                TextSpan(text: '$label: ', style: const TextStyle(color: Colors.grey)),
-                TextSpan(text: value, style: const TextStyle(fontWeight: FontWeight.w500)),
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                TextSpan(
+                  text: value,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),
