@@ -49,7 +49,13 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
           'locations': detail.location,
           'status_task': detail.statusTask,
           'photos': detail.photos
-              .map((p) => {'photo_path': p.photoPath, 'caption': p.caption})
+              .map((p) => {
+                    'image': p.photoPath,
+                    'caption': p.caption,
+                    'filename': p.filename,
+                    'size': p.size,
+                    'mimetype': p.mimetype,
+                  })
               .toList(),
         };
       }
@@ -288,10 +294,16 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                               maxHeight: 1024,
                             );
                             if (image != null) {
+                              final file = File(image.path);
+                              final size = await file.length();
+                              final filename = image.path.split('/').last;
                               setModalState(() {
                                 localPhotos.add({
-                                  'photo_path': image.path,
+                                  'image': image.path,
                                   'caption': '',
+                                  'filename': filename,
+                                  'size': size,
+                                  'mimetype': 'image/jpeg',
                                 });
                               });
                             }
@@ -337,7 +349,7 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: Image.file(
-                                    File(photo['photo_path']),
+                                    File(photo['image'] ?? photo['photo_path'] ?? ''),
                                     width: 60,
                                     height: 60,
                                     fit: BoxFit.cover,

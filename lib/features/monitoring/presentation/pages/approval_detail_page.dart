@@ -229,6 +229,7 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
         children: [
           _buildHeaderRow('ID Laporan', _currentLog.id),
           _buildHeaderRow('Nama Pekerja', _currentLog.workerName),
+          _buildHeaderRow('Nama Mandor', _currentLog.mandorName),
           _buildHeaderRow(
             'Tanggal',
             DateFormat(
@@ -246,9 +247,48 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
+    if (value.isEmpty || value == 'N/A') return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ),
+          const Text(':', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: valueColor ?? Colors.black87,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -290,10 +330,13 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Lokasi: ${detail.location}'),
-            Text('Jumlah: ${detail.quantity}'),
+            _buildDetailRow('Lokasi / Blok', detail.location),
+            _buildDetailRow('Nomor Baris', detail.nomorBaris),
+            _buildDetailRow('Nama Anggota', detail.namaAnggota),
+            _buildDetailRow('Kuantitas', detail.quantity),
+            _buildDetailRow('Kondisi', detail.condition, valueColor: _getConditionColor(detail.condition)),
             if (detail.description.isNotEmpty)
-              Text('Ket: ${detail.description}'),
+              _buildDetailRow('Deskripsi', detail.description),
             const SizedBox(height: 12),
             if (detail.photos.isNotEmpty)
               SizedBox(

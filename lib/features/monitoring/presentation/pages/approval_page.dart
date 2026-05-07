@@ -327,6 +327,11 @@ class _ApprovalPageState extends State<ApprovalPage> {
                           fontSize: 16,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Mandor: ${log.mandorName}',
+                        style: const TextStyle(color: AppColors.primaryGreen, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'ID: ${log.id} • ${log.details.length} Tugas',

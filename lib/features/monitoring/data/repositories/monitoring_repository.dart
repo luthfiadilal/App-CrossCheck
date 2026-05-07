@@ -104,13 +104,11 @@ class MonitoringRepository {
           'task_type_id': detail['task_type_id'],
           'quantity': detail['quantity'],
           'conditions': detail['conditions'],
-          'photo_path': detail['photo_path'], // Legacy field
           'descriptions': detail['descriptions'],
           'nomor_baris': detail['nomor_baris'],
           'locations': detail['locations'],
           'status_task': detail['status_task'] ?? status,
           'created_at': now,
-          'local_image_path': detail['local_image_path'], // Legacy field
           'nama_anggota': detail['nama_anggota'],
         });
 
@@ -119,8 +117,11 @@ class MonitoringRepository {
           for (var photo in (detail['photos'] as List)) {
             await txn.insert('pending_photos', {
               'detail_local_id': detailId,
-              'photo_path': photo['photo_path'],
+              'image': photo['image'],
               'caption': photo['caption'],
+              'filename': photo['filename'],
+              'size': photo['size'],
+              'mimetype': photo['mimetype'],
               'created_at': now,
             });
           }
@@ -179,8 +180,11 @@ class MonitoringRepository {
           for (var photo in (detail['photos'] as List)) {
             await txn.insert('pending_photos', {
               'detail_local_id': detailId,
-              'photo_path': photo['photo_path'],
+              'image': photo['image'],
               'caption': photo['caption'],
+              'filename': photo['filename'],
+              'size': photo['size'],
+              'mimetype': photo['mimetype'],
               'created_at': now,
             });
           }
@@ -220,7 +224,7 @@ class MonitoringRepository {
         List<MonitoringPhotoModel> photos = photosRaw.map((p) {
           return MonitoringPhotoModel(
             photoId: 'LOCAL-${p['id']}',
-            photoPath: p['photo_path'] ?? '',
+            photoPath: p['image'] ?? '',
             caption: p['caption'] ?? '',
           );
         }).toList();
@@ -232,7 +236,7 @@ class MonitoringRepository {
             taskName: d['task_name'] ?? 'Tugas Tidak Diketahui',
             quantity: d['quantity'] ?? '0',
             condition: d['conditions'] ?? 'BAIK',
-            photoPath: d['local_image_path'] ?? '',
+            photoPath: '', // Removed legacy field
             description: d['descriptions'] ?? '',
             nomorBaris: d['nomor_baris'] ?? '',
             location: d['locations'] ?? '',
@@ -280,9 +284,18 @@ class MonitoringRepository {
         );
 
         var detailMap = Map<String, dynamic>.from(d);
-        detailMap['photos'] = photos
-            .map((p) => Map<String, dynamic>.from(p))
-            .toList();
+        detailMap['photos'] = photos.map((p) {
+          var pMap = Map<String, dynamic>.from(p);
+          // Map 'image' back to 'photo_path' if needed by the caller, 
+          // but we'll use 'image' as the source of truth locally
+          return {
+            'image': pMap['image'],
+            'caption': pMap['caption'],
+            'filename': pMap['filename'],
+            'size': pMap['size'],
+            'mimetype': pMap['mimetype'],
+          };
+        }).toList();
         detailsWithPhotos.add(detailMap);
       }
 

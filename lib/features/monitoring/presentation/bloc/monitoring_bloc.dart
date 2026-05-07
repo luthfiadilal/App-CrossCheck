@@ -152,9 +152,9 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
 
           if (detail['photos'] != null) {
             for (var photo in (detail['photos'] as List)) {
-              String? remotePath;
+                String? remotePath;
               try {
-                String localPath = photo['photo_path'];
+                String localPath = photo['image'] ?? photo['photo_path'];
                 // Jika sudah berupa URL (dari server), jangan upload lagi
                 if (localPath.startsWith('http') || localPath.startsWith('/')) {
                   remotePath = localPath;
@@ -182,11 +182,13 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
             'nomor_baris': detail['nomor_baris'],
             'locations': detail['locations'],
             'nama_anggota': detail['nama_anggota'],
+            'status_task': detail['status_task'], // Include status (e.g. PENDING or APPROVED)
             'photos': detailPhotos,
           });
         }
 
         reportsToSubmit.add({
+          'log_id': log['log_id'], // Critical for update logic on server
           'worker_name': log['worker_name'],
           'details': details,
           'created_at': log['created_at'],
@@ -238,11 +240,15 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
           'nomor_baris': d.nomorBaris,
           'locations': d.location,
           'nama_anggota': d.namaAnggota,
+          'status_task': d.statusTask,
           'photos': d.photos
               .map(
                 (p) => {
-                  'photo_path': p.photoPath, 
+                  'image': p.photoPath, 
                   'caption': p.caption,
+                  'filename': p.filename,
+                  'size': p.size,
+                  'mimetype': p.mimetype,
                 },
               )
               .toList(),
@@ -253,11 +259,12 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
         workerName: log.workerName,
         details: details,
         serverLogId: log.id,
+        status: log.status,
       );
 
       emit(
         const LogCreatedSuccess(
-          'Laporan siap untuk diperbaiki di tab PENDING.',
+          'Laporan berhasil diunduh dan siap untuk diperbaiki secara offline.',
         ),
       );
 

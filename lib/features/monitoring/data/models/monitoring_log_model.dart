@@ -1,26 +1,39 @@
 class MonitoringPhotoModel {
   final String photoId;
-  final String photoPath;
+  final String photoPath; // Maps to 'image' in local DB or 'photo_path' in API
   final String caption;
+  final String? filename;
+  final int? size;
+  final String? mimetype;
 
   MonitoringPhotoModel({
     required this.photoId,
     required this.photoPath,
     required this.caption,
+    this.filename,
+    this.size,
+    this.mimetype,
   });
 
   factory MonitoringPhotoModel.fromJson(Map<String, dynamic> json) {
     return MonitoringPhotoModel(
       photoId: json['photo_id'] ?? '',
-      photoPath: json['photo_path'] ?? '',
+      photoPath: json['photo_path'] ?? json['image'] ?? '',
       caption: json['caption'] ?? '',
+      filename: json['filename'],
+      size: json['size'],
+      mimetype: json['mimetype'],
     );
   }
 
   Map<String, dynamic> toJson() => {
     'photo_id': photoId,
     'photo_path': photoPath,
+    'image': photoPath, // Include both for compatibility
     'caption': caption,
+    'filename': filename,
+    'size': size,
+    'mimetype': mimetype,
   };
 }
 

@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6, // Upgraded version
+      version: 7, // Upgraded version
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -56,6 +56,14 @@ class DatabaseHelper {
 
     if (oldVersion < 6) {
       await db.execute('ALTER TABLE pending_logs ADD COLUMN server_log_id TEXT');
+    }
+
+    if (oldVersion < 7) {
+      // Rename photo_path to image and add more fields to match upload API format
+      await db.execute('ALTER TABLE pending_photos RENAME COLUMN photo_path TO image');
+      await db.execute('ALTER TABLE pending_photos ADD COLUMN filename TEXT');
+      await db.execute('ALTER TABLE pending_photos ADD COLUMN size INTEGER');
+      await db.execute('ALTER TABLE pending_photos ADD COLUMN mimetype TEXT');
     }
   }
 
@@ -94,13 +102,11 @@ class DatabaseHelper {
         task_type_id $textType,
         quantity $textNullable,
         conditions $textNullable,
-        photo_path $textNullable,
         descriptions $textNullable,
         nomor_baris $textNullable,
         locations $textNullable,
         status_task $textNullable,
         created_at $textNullable,
-        local_image_path $textNullable,
         nama_anggota $textNullable,
         FOREIGN KEY (log_local_id) REFERENCES pending_logs (id) ON DELETE CASCADE
       )
@@ -111,8 +117,11 @@ class DatabaseHelper {
       CREATE TABLE pending_photos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         detail_local_id INTEGER NOT NULL,
-        photo_path TEXT NOT NULL,
+        image TEXT NOT NULL,
         caption TEXT,
+        filename TEXT,
+        size INTEGER,
+        mimetype TEXT,
         created_at TEXT,
         FOREIGN KEY (detail_local_id) REFERENCES pending_details (id) ON DELETE CASCADE
       )
