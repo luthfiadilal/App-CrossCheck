@@ -156,7 +156,7 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
               try {
                 String localPath = photo['image'] ?? photo['photo_path'];
                 // Jika sudah berupa URL (dari server), jangan upload lagi
-                if (localPath.startsWith('http') || localPath.startsWith('/')) {
+                if (localPath.startsWith('http') || localPath.startsWith('/uploads/')) {
                   remotePath = localPath;
                 } else {
                   remotePath = await _monitoringRepository.uploadImage(localPath);
@@ -230,8 +230,24 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     try {
       final log = event.log;
 
-      // Convert MonitoringLogModel to local format
-      List<Map<String, dynamic>> details = log.details.map((d) {
+      // Convert MonitoringLogModel to local format and download images
+      List<Map<String, dynamic>> details = await Future.wait(log.details.map((d) async {
+        List<Map<String, dynamic>> photos = await Future.wait(d.photos.map((p) async {
+          String localPath = p.photoPath;
+          // Jika path dari server, download ke local agar bisa diakses offline
+          if (p.photoPath.startsWith('/uploads/') || p.photoPath.startsWith('http')) {
+            localPath = await _monitoringRepository.downloadImage(p.photoPath);
+          }
+          
+          return {
+            'image': localPath,
+            'caption': p.caption,
+            'filename': p.filename,
+            'size': p.size,
+            'mimetype': p.mimetype,
+          };
+        }).toList());
+
         return {
           'task_type_id': d.taskTypeId,
           'quantity': d.quantity,
@@ -241,19 +257,9 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
           'locations': d.location,
           'nama_anggota': d.namaAnggota,
           'status_task': d.statusTask,
-          'photos': d.photos
-              .map(
-                (p) => {
-                  'image': p.photoPath, 
-                  'caption': p.caption,
-                  'filename': p.filename,
-                  'size': p.size,
-                  'mimetype': p.mimetype,
-                },
-              )
-              .toList(),
+          'photos': photos,
         };
-      }).toList();
+      }).toList());
 
       await _monitoringRepository.saveLogLocally(
         workerName: log.workerName,

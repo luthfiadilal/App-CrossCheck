@@ -4,6 +4,8 @@ import '../../../../core/database/database_helper.dart';
 import '../models/monitoring_log_model.dart';
 import '../models/task_type_model.dart';
 import 'package:sqflite/sqflite.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class MonitoringRepository {
   final ApiClient _apiClient = ApiClient();
@@ -40,6 +42,32 @@ class MonitoringRepository {
       }
     } on DioException catch (e) {
       throw Exception(_handleDioError(e, 'Failed to upload image'));
+    }
+  }
+
+  Future<String> downloadImage(String url) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = url.split('/').last;
+      final filePath = '${directory.path}/$fileName';
+      final file = File(filePath);
+
+      // Jika sudah ada, jangan download lagi
+      if (await file.exists()) {
+        return filePath;
+      }
+
+      // Gunakan full URL jika relative
+      final fullUrl = url.startsWith('http')
+          ? url
+          : 'https://api.crosscheck.my.id$url';
+
+      await _apiClient.dio.download(fullUrl, filePath);
+      return filePath;
+    } catch (e) {
+      print('Download error: $e');
+      // Return original URL if download fails so it can still try to display online
+      return url;
     }
   }
 

@@ -298,137 +298,422 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
     bool isApproved = detail.statusTask == 'APPROVED';
     bool isRecheck = detail.statusTask == 'RECHECK';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isApproved
-              ? Colors.green
-              : (isRecheck ? Colors.orange : Colors.grey[300]!),
-          width: isApproved || isRecheck ? 2 : 1,
+    return InkWell(
+      onTap: () => _showTaskDetail(detail),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isApproved
+                ? Colors.green
+                : (isRecheck ? Colors.orange : Colors.grey[300]!),
+            width: isApproved || isRecheck ? 2 : 1,
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    detail.taskName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      detail.taskName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
+                  _buildStatusBadge(detail.statusTask),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildDetailRow('Lokasi / Blok', detail.location),
+              _buildDetailRow('Nomor Baris', detail.nomorBaris),
+              _buildDetailRow('Nama Anggota', detail.namaAnggota),
+              _buildDetailRow('Kuantitas', detail.quantity),
+              _buildDetailRow(
+                'Kondisi',
+                detail.condition,
+                valueColor: _getConditionColor(detail.condition),
+              ),
+              if (detail.description.isNotEmpty)
+                _buildDetailRow('Deskripsi', detail.description),
+              const SizedBox(height: 12),
+              if (detail.photos.isNotEmpty)
+                SizedBox(
+                  height: 150,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: detail.photos.length,
+                    itemBuilder: (context, idx) {
+                      final photo = detail.photos[idx];
+                      return Container(
+                        width: 120,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: GestureDetector(
+                                onTap: () => _showFullScreenImage(
+                                  'https://api.crosscheck.my.id${photo.photoPath}',
+                                  photo.caption,
+                                ),
+                                child: Image.network(
+                                  'https://api.crosscheck.my.id${photo.photoPath}',
+                                  height: 100,
+                                  width: 120,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Container(
+                                        height: 100,
+                                        width: 120,
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                ),
+                              ),
+                            ),
+                            if (photo.caption.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  photo.caption,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.black54,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                _buildStatusBadge(detail.statusTask),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildDetailRow('Lokasi / Blok', detail.location),
-            _buildDetailRow('Nomor Baris', detail.nomorBaris),
-            _buildDetailRow('Nama Anggota', detail.namaAnggota),
-            _buildDetailRow('Kuantitas', detail.quantity),
-            _buildDetailRow('Kondisi', detail.condition, valueColor: _getConditionColor(detail.condition)),
-            if (detail.description.isNotEmpty)
-              _buildDetailRow('Deskripsi', detail.description),
-            const SizedBox(height: 12),
-            if (detail.photos.isNotEmpty)
-              SizedBox(
-                height: 150,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: detail.photos.length,
-                  itemBuilder: (context, idx) {
-                    final photo = detail.photos[idx];
-                    return Container(
-                      width: 120,
-                      margin: const EdgeInsets.only(right: 12),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Lihat Detail',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: AppColors.primaryGreen,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTaskDetail(MonitoringDetailModel detail) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            bool isApproved = detail.statusTask == 'APPROVED';
+            bool isRecheck = detail.statusTask == 'RECHECK';
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle Bar
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              'https://api.crosscheck.my.id${photo.photoPath}',
-                              height: 100,
-                              width: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                height: 100,
-                                width: 120,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  detail.taskName,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryGreen,
+                                  ),
+                                ),
+                              ),
+                              _buildStatusBadge(detail.statusTask),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          // Detail Grid
+                          _buildDetailGrid(detail),
+                          const SizedBox(height: 32),
+                          if (detail.description.isNotEmpty) ...[
+                            const Text(
+                              'DESKRIPSI / CATATAN',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              detail.description,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.5,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                          if (detail.photos.isNotEmpty) ...[
+                            const Text(
+                              'DOKUMENTASI FOTO',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildImageGallery(detail.photos),
+                          ],
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Bottom Actions
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: isRecheck
+                                ? null
+                                : () {
+                                    _onDetailAction(detail.detailId, 'RECHECK');
+                                    Navigator.pop(context);
+                                  },
+                            icon: const Icon(Icons.close),
+                            label: const Text('RE-CHECK'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.orange,
+                              side: const BorderSide(color: Colors.orange),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
-                          if (photo.caption.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                photo.caption,
-                                style: const TextStyle(fontSize: 10, color: Colors.black54),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: isApproved
+                                ? null
+                                : () {
+                                    _onDetailAction(detail.detailId, 'APPROVED');
+                                    Navigator.pop(context);
+                                  },
+                            icon: const Icon(Icons.check),
+                            label: const Text('APPROVE'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              elevation: 0,
                             ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailGrid(MonitoringDetailModel detail) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 2.5,
+      children: [
+        _buildGridItem(Icons.location_on_outlined, 'Lokasi', detail.location),
+        _buildGridItem(Icons.format_list_numbered, 'Baris', detail.nomorBaris),
+        _buildGridItem(Icons.person_outline, 'Anggota', detail.namaAnggota),
+        _buildGridItem(Icons.analytics_outlined, 'Kuantitas', detail.quantity),
+        _buildGridItem(
+          Icons.info_outline,
+          'Kondisi',
+          detail.condition,
+          color: _getConditionColor(detail.condition),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGridItem(IconData icon, String label, String value, {Color? color}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[100]!),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color ?? Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Button RECHECK (Icon X)
-                Material(
-                  color: isRecheck ? Colors.orange : Colors.transparent,
-                  shape: const CircleBorder(
-                    side: BorderSide(color: Colors.orange),
-                  ),
-                  child: IconButton(
-                    onPressed: isRecheck
-                        ? null
-                        : () => _onDetailAction(detail.detailId, 'RECHECK'),
-                    icon: Icon(
-                      Icons.close,
-                      color: isRecheck ? Colors.white : Colors.orange,
-                      size: 20,
-                    ),
-                    tooltip: 'Recheck',
-                  ),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                 ),
-                const SizedBox(width: 12),
-                // Button APPROVE (Icon Ceklis)
-                Material(
-                  color: isApproved ? Colors.green : Colors.transparent,
-                  shape: const CircleBorder(
-                    side: BorderSide(color: Colors.green),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: color ?? Colors.black87,
                   ),
-                  child: IconButton(
-                    onPressed: isApproved
-                        ? null
-                        : () => _onDetailAction(detail.detailId, 'APPROVED'),
-                    icon: Icon(
-                      Icons.check,
-                      color: isApproved ? Colors.white : Colors.green,
-                      size: 20,
-                    ),
-                    tooltip: 'Approve',
-                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildImageGallery(List<MonitoringPhotoModel> photos) {
+    return Column(
+      children: photos.map((photo) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: GestureDetector(
+                  onTap: () => _showFullScreenImage(
+                    'https://api.crosscheck.my.id${photo.photoPath}',
+                    photo.caption,
+                  ),
+                  child: Image.network(
+                    'https://api.crosscheck.my.id${photo.photoPath}',
+                    height: 250,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 250,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ),
+              if (photo.caption.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                  ),
+                  child: Text(
+                    photo.caption,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -450,6 +735,81 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
           color: color,
           fontSize: 10,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenImage(String imageUrl, String caption) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.broken_image, color: Colors.white, size: 50),
+                        SizedBox(height: 16),
+                        Text('Gagal memuat gambar', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            if (caption.isNotEmpty)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    caption,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

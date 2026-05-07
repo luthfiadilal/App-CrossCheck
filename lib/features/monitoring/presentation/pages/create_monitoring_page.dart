@@ -348,12 +348,33 @@ class _CreateMonitoringPageState extends State<CreateMonitoringPage> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(photo['image'] ?? photo['photo_path'] ?? ''),
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: (photo['image'] ?? photo['photo_path'] ?? '').startsWith('/uploads/') || (photo['image'] ?? photo['photo_path'] ?? '').startsWith('http')
+                                      ? Image.network(
+                                          (photo['image'] ?? photo['photo_path'] ?? '').startsWith('http')
+                                              ? (photo['image'] ?? photo['photo_path'] ?? '')
+                                              : 'https://api.crosscheck.my.id${photo['image'] ?? photo['photo_path'] ?? ''}',
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            width: 60,
+                                            height: 60,
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.broken_image, size: 20),
+                                          ),
+                                        )
+                                      : Image.file(
+                                          File(photo['image'] ?? photo['photo_path'] ?? ''),
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            width: 60,
+                                            height: 60,
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.broken_image, size: 20),
+                                          ),
+                                        ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(

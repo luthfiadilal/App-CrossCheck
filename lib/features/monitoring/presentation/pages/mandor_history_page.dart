@@ -8,6 +8,8 @@ import '../bloc/monitoring_state.dart';
 import '../widgets/status_badge.dart';
 import 'monitoring_log_detail_page.dart';
 import 'create_monitoring_page.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class MandorHistoryPage extends StatefulWidget {
   const MandorHistoryPage({super.key});
@@ -292,7 +294,14 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
                                     log.workerName,
                                     Colors.blue,
                                   ),
-                                  if (log.status.toUpperCase() == 'RE-CHECK')
+                                  if (log.status.toUpperCase() == 'RE-CHECK' &&
+                                      !_isOfflineMode &&
+                                      context.read<AuthBloc>().state is AuthSuccess &&
+                                      !['ASISTEN_LAPANGAN', 'KEPALA_KEBUN'].contains(
+                                        (context.read<AuthBloc>().state as AuthSuccess)
+                                            .user
+                                            .role,
+                                      ))
                                     GestureDetector(
                                       onTap: () {
                                         context.read<MonitoringBloc>().add(
