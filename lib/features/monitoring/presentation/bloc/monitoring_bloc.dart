@@ -145,6 +145,10 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
       List<Map<String, dynamic>> reportsToSubmit = [];
 
       for (var log in pendingLogs) {
+        // Hanya sinkronisasi laporan yang statusnya PENDING
+        // Laporan RE-CHECK yang masih dalam perbaikan tidak boleh dikirim dulu
+        if (log['status_approval'] != 'PENDING') continue;
+
         List<Map<String, dynamic>> details = [];
 
         for (var detail in log['details']) {

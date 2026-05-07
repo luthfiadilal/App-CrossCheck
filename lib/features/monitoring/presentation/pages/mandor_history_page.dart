@@ -85,6 +85,7 @@ class _MandorHistoryPageState extends State<MandorHistoryPage> {
                           backgroundColor: AppColors.primaryGreen,
                         ),
                       );
+                      _fetchData(); // Refresh list to remove the downloaded item from RE-CHECK tab
                     } else if (state is MonitoringError) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

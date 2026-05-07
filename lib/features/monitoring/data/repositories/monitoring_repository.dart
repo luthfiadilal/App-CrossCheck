@@ -345,7 +345,9 @@ class MonitoringRepository {
   Future<int> getPendingLogsCount() async {
     final db = await _dbHelper.database;
     final count = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM pending_logs'),
+      await db.rawQuery(
+        "SELECT COUNT(*) FROM pending_logs WHERE status_approval = 'PENDING'",
+      ),
     );
     return count ?? 0;
   }
