@@ -118,6 +118,11 @@ class MonitoringLogDetailPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                     ],
+                    // Approval History Section
+                    if (log.approvalHistories.isNotEmpty) ...[
+                      _buildApprovalHistorySection(log.approvalHistories),
+                      const SizedBox(height: 24),
+                    ],
                     const Row(
                       children: [
                         Icon(Icons.list_alt, color: AppColors.primaryGreen),
@@ -828,6 +833,171 @@ class MonitoringLogDetailPage extends StatelessWidget {
       ],
     );
   }
+
+  // ---- Approval History Section ----
+
+  Widget _buildApprovalHistorySection(List<ApprovalHistoryModel> histories) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: AppColors.primaryGreen),
+            SizedBox(width: 8),
+            Text(
+              'RIWAYAT PEMERIKSAAN',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...histories.map((h) => _buildApprovalCard(h)),
+      ],
+    );
+  }
+
+  Widget _buildApprovalCard(ApprovalHistoryModel history) {
+    final isApproved = history.statusApproval.toUpperCase() == 'APPROVE' ||
+        history.statusApproval.toUpperCase() == 'APPROVED';
+    final Color cardColor = isApproved ? Colors.green : Colors.orange;
+    final IconData cardIcon =
+        isApproved ? Icons.check_circle_outline : Icons.refresh_outlined;
+
+    String formattedDate = history.actionDate;
+    try {
+      final dt = DateTime.parse(history.actionDate).toLocal();
+      formattedDate = DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(dt);
+    } catch (_) {}
+
+    // Map role to a human-readable label
+    String roleLabel = history.approverRole;
+    if (roleLabel == 'ASISTEN_LAPANGAN') roleLabel = 'Asisten Lapangan';
+    if (roleLabel == 'KEPALA_KEBUN') roleLabel = 'Kepala Kebun';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cardColor.withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardColor.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(cardIcon, color: cardColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          history.approverName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (roleLabel.isNotEmpty)
+                          Text(
+                            roleLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: cardColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        history.statusApproval,
+                        style: TextStyle(
+                          color: cardColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.access_time,
+                        size: 12, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Text(
+                      formattedDate,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+                if (history.notes.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.comment_outlined,
+                            size: 13, color: Colors.grey[500]),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            history.notes,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.4,
+                              color: Colors.black87,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- End Approval History Section ----
 
   Widget _buildTaskStatus(String status) {
     Color color = Colors.grey;

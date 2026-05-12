@@ -371,8 +371,8 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                                   height: 100,
                                   width: 120,
                                   fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (context, error, stackTrace) => Container(
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
                                         height: 100,
                                         width: 120,
                                         color: Colors.grey[200],
@@ -568,7 +568,10 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                             onPressed: isApproved
                                 ? null
                                 : () {
-                                    _onDetailAction(detail.detailId, 'APPROVED');
+                                    _onDetailAction(
+                                      detail.detailId,
+                                      'APPROVED',
+                                    );
                                     Navigator.pop(context);
                                   },
                             icon: const Icon(Icons.check),
@@ -619,7 +622,12 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
     );
   }
 
-  Widget _buildGridItem(IconData icon, String label, String value, {Color? color}) {
+  Widget _buildGridItem(
+    IconData icon,
+    String label,
+    String value, {
+    Color? color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -676,7 +684,9 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: GestureDetector(
                   onTap: () => _showFullScreenImage(
                     'https://api.crosscheck.my.id${photo.photoPath}',
@@ -689,7 +699,11 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 250,
                       color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                      child: const Icon(
+                        Icons.broken_image,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -699,7 +713,9 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(16),
+                    ),
                   ),
                   child: Text(
                     photo.caption,
@@ -760,7 +776,10 @@ class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
                       children: [
                         Icon(Icons.broken_image, color: Colors.white, size: 50),
                         SizedBox(height: 16),
-                        Text('Gagal memuat gambar', style: TextStyle(color: Colors.white)),
+                        Text(
+                          'Gagal memuat gambar',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ],
                     ),
                   ),

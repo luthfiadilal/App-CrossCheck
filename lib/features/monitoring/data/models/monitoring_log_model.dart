@@ -1,3 +1,39 @@
+class ApprovalHistoryModel {
+  final String approvalId;
+  final String logId;
+  final String approverId;
+  final String approverName;
+  final String approverRole;
+  final String statusApproval;
+  final String notes;
+  final String actionDate;
+
+  ApprovalHistoryModel({
+    required this.approvalId,
+    required this.logId,
+    required this.approverId,
+    required this.approverName,
+    required this.approverRole,
+    required this.statusApproval,
+    required this.notes,
+    required this.actionDate,
+  });
+
+  factory ApprovalHistoryModel.fromJson(Map<String, dynamic> json) {
+    final approver = json['approver'] as Map<String, dynamic>?;
+    return ApprovalHistoryModel(
+      approvalId: json['approval_id'] ?? '',
+      logId: json['log_id'] ?? '',
+      approverId: json['approver_id'] ?? '',
+      approverName: approver?['name'] ?? 'Tidak Diketahui',
+      approverRole: approver?['role'] ?? '',
+      statusApproval: json['status_approval'] ?? '',
+      notes: json['notes'] ?? '',
+      actionDate: json['action_date'] ?? '',
+    );
+  }
+}
+
 class MonitoringPhotoModel {
   final String photoId;
   final String photoPath; // Maps to 'image' in local DB or 'photo_path' in API
@@ -119,6 +155,7 @@ class MonitoringLogModel {
   final String mandorName;
   final String status;
   final List<MonitoringDetailModel> details;
+  final List<ApprovalHistoryModel> approvalHistories;
 
   MonitoringLogModel({
     required this.id,
@@ -127,6 +164,7 @@ class MonitoringLogModel {
     required this.mandorName,
     required this.status,
     required this.details,
+    this.approvalHistories = const [],
   });
 
   factory MonitoringLogModel.fromJson(Map<String, dynamic> json) {
@@ -137,6 +175,16 @@ class MonitoringLogModel {
           .toList();
     }
 
+    List<ApprovalHistoryModel> approvalHistories = [];
+    if (json['approvalHistories'] != null) {
+      final raw = json['approvalHistories'] as List;
+      approvalHistories = raw
+          .map((a) => ApprovalHistoryModel.fromJson(a))
+          .toList();
+      // Sort descending by actionDate
+      approvalHistories.sort((a, b) => b.actionDate.compareTo(a.actionDate));
+    }
+
     return MonitoringLogModel(
       id: json['log_id'] ?? '',
       date: json['created_at'] ?? '',
@@ -144,6 +192,7 @@ class MonitoringLogModel {
       mandorName: json['mandor']?['name'] ?? 'Mandor Tidak Diketahui',
       status: json['status_approval'] ?? 'PENDING',
       details: details,
+      approvalHistories: approvalHistories,
     );
   }
 
